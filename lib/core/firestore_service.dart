@@ -136,12 +136,16 @@ class FirestoreService {
     required String uid,
     required Map<String, dynamic> addressData,
     Map<String, dynamic>? documents,
+    String? name,
+    String? phone,
   }) async {
     await _users.doc(uid).update({
       'kycStatus':      'pending',
       'kycSubmittedAt': FieldValue.serverTimestamp(),
       'kycAddress':     addressData,
       if (documents != null) 'kycDocuments': documents,
+      if (name != null && name.isNotEmpty) 'name': name,
+      if (phone != null && phone.isNotEmpty) 'phone': phone,
     });
   }
 

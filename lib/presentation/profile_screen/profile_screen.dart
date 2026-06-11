@@ -1,12 +1,15 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../core/firebase_auth_service.dart';
 import '../../core/firestore_service.dart';
+import '../../core/imgbb_service.dart';
 import '../../core/user_session.dart';
 import '../../core/wallet_service.dart';
 import '../../routes/app_routes.dart';
@@ -167,6 +170,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
       {'icon': 'notifications_outlined','label': 'Notifications'},
       {'icon': 'chat_bubble_outline',   'label': 'Messages'},
       {'icon': 'help_outline',          'label': 'Help & Support'},
+      {'icon': 'swap_horiz',            'label': role == 'landOwner' ? 'Switch to Farmer' : 'Switch to Land Owner'},
       {'icon': 'logout',                'label': 'Logout'},
     ];
 
@@ -463,16 +467,381 @@ class _ProfileBodyState extends State<_ProfileBody> {
   }
 
   void _handleMenuTap(BuildContext context, String label) {
+    final data   = widget.userData ?? {};
+    final role   = data['role'] as String? ?? UserSession.instance.role.name;
+
     switch (label) {
-      case 'KYC Verification':   context.push(AppRoutes.kycVerification); break;
-      case 'My Wallet':          pushWalletScreen(context);                 break;
-      case 'Notifications':      context.push(AppRoutes.notifications);   break;
-      case 'Saved Lands':        context.push(AppRoutes.savedLands);      break;
-      case 'Reviews & Ratings':  context.push(AppRoutes.reviews);         break;
-      case 'Help & Support':     context.push(AppRoutes.helpSupport);     break;
-      case 'Messages':           context.go(AppRoutes.chat);              break;
-      case 'Logout':             _signOut();                               break;
+      case 'Edit Profile':       _showEditProfileSheet(context);            break;
+      case 'KYC Verification':   context.push(AppRoutes.kycVerification);   break;
+      case 'My Wallet':          pushWalletScreen(context);                  break;
+      case 'Notifications':      context.push(AppRoutes.notifications);     break;
+      case 'Saved Lands':        context.push(AppRoutes.savedLands);        break;
+      case 'Reviews & Ratings':  context.push(AppRoutes.reviews);           break;
+      case 'Help & Support':     context.push(AppRoutes.helpSupport);       break;
+      case 'Messages':           context.go(AppRoutes.chat);                break;
+      case 'Switch to Land Owner':
+      case 'Switch to Farmer':
+        _showRoleSwitchDialog(
+          context,
+          role == 'landOwner' ? 'farmer' : 'landOwner',
+        );
+        break;
+      case 'Logout':             _signOut();                                 break;
     }
+  }
+
+  // ── Edit Profile sheet ───────────────────────────────────────────────────
+
+  void _showEditProfileSheet(BuildContext context) {
+    final user   = widget.firebaseUser;
+    final data   = widget.userData ?? {};
+    final theme  = widget.theme;
+
+    final nameCtrl  = TextEditingController(
+      text: data['name'] as String? ?? user.displayName ?? '',
+    );
+    final phoneCtrl = TextEditingController(
+      text: data['phone'] as String? ?? user.phoneNumber ?? '',
+    );
+    final bioCtrl   = TextEditingController(
+      text: data['bio'] as String? ?? '',
+    );
+
+    String? currentPhotoUrl = data['photoUrl'] as String? ?? user.photoURL ?? '';
+    File? pickedFile;
+    bool isUploadingPhoto = false;
+    bool isSaving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            Future<void> pickAvatar() async {
+              final picker = ImagePicker();
+              final picked = await picker.pickImage(
+                source: ImageSource.gallery,
+                imageQuality: 80,
+                maxWidth: 600,
+              );
+              if (picked == null) return;
+              final file = File(picked.path);
+              setModalState(() {
+                pickedFile = file;
+                isUploadingPhoto = true;
+              });
+              try {
+                final url = await ImgBBService.instance.uploadImage(
+                  file,
+                  name: 'avatar_${user.uid}_${DateTime.now().millisecondsSinceEpoch}',
+                );
+                setModalState(() {
+                  currentPhotoUrl = url;
+                  isUploadingPhoto = false;
+                });
+              } catch (_) {
+                setModalState(() => isUploadingPhoto = false);
+              }
+            }
+
+            Future<void> saveChanges() async {
+              setModalState(() => isSaving = true);
+              try {
+                final updates = <String, dynamic>{
+                  'name':  nameCtrl.text.trim(),
+                  'phone': phoneCtrl.text.trim(),
+                  if (bioCtrl.text.trim().isNotEmpty)
+                    'bio': bioCtrl.text.trim(),
+                  if (currentPhotoUrl != null && currentPhotoUrl!.isNotEmpty)
+                    'photoUrl': currentPhotoUrl,
+                };
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .update(updates);
+                await user.updateDisplayName(nameCtrl.text.trim());
+                if (currentPhotoUrl != null && currentPhotoUrl!.isNotEmpty) {
+                  await user.updatePhotoURL(currentPhotoUrl);
+                }
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Profile updated successfully',
+                        style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                      ),
+                      backgroundColor: theme.colorScheme.primary,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      margin: const EdgeInsets.all(16),
+                    ),
+                  );
+                }
+              } catch (_) {
+                setModalState(() => isSaving = false);
+              }
+            }
+
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: EdgeInsets.fromLTRB(
+                24, 16, 24,
+                MediaQuery.of(ctx).viewInsets.bottom + 32,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Handle
+                    Center(
+                      child: Container(
+                        width: 40, height: 4,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.outline.withAlpha(70),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Edit Profile',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18, fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Avatar picker
+                    Center(
+                      child: GestureDetector(
+                        onTap: isUploadingPhoto ? null : pickAvatar,
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 44,
+                              backgroundColor: theme.colorScheme.primaryContainer,
+                              backgroundImage: pickedFile != null
+                                  ? FileImage(pickedFile!) as ImageProvider
+                                  : (currentPhotoUrl != null && currentPhotoUrl!.isNotEmpty)
+                                      ? NetworkImage(currentPhotoUrl!)
+                                      : null,
+                              child: (pickedFile == null &&
+                                      (currentPhotoUrl == null ||
+                                          currentPhotoUrl!.isEmpty))
+                                  ? Text(
+                                      nameCtrl.text.isNotEmpty
+                                          ? nameCtrl.text[0].toUpperCase()
+                                          : 'U',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w800,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            if (isUploadingPhoto)
+                              Positioned.fill(
+                                child: CircleAvatar(
+                                  radius: 44,
+                                  backgroundColor:
+                                      Colors.black.withAlpha(100),
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            Positioned(
+                              bottom: 0, right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white, width: 2,
+                                  ),
+                                ),
+                                child: CustomIconWidget(
+                                  iconName: 'camera_alt',
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Full Name
+                    TextFormField(
+                      controller: nameCtrl,
+                      style: GoogleFonts.plusJakartaSans(fontSize: 14),
+                      decoration: InputDecoration(
+                        labelText: 'Full Name *',
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: CustomIconWidget(
+                            iconName: 'person_outline',
+                            color: theme.colorScheme.outline,
+                            size: 18,
+                          ),
+                        ),
+                        prefixIconConstraints:
+                            const BoxConstraints(minWidth: 0, minHeight: 0),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Phone
+                    TextFormField(
+                      controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      style: GoogleFonts.plusJakartaSans(fontSize: 14),
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number *',
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: CustomIconWidget(
+                            iconName: 'phone',
+                            color: theme.colorScheme.outline,
+                            size: 18,
+                          ),
+                        ),
+                        prefixIconConstraints:
+                            const BoxConstraints(minWidth: 0, minHeight: 0),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Bio
+                    TextFormField(
+                      controller: bioCtrl,
+                      maxLines: 3,
+                      style: GoogleFonts.plusJakartaSans(fontSize: 14),
+                      decoration: InputDecoration(
+                        labelText: 'Bio (optional)',
+                        alignLabelWithHint: true,
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: CustomIconWidget(
+                            iconName: 'info_outline',
+                            color: theme.colorScheme.outline,
+                            size: 18,
+                          ),
+                        ),
+                        prefixIconConstraints:
+                            const BoxConstraints(minWidth: 0, minHeight: 0),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: isSaving ? null : saveChanges,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: isSaving
+                          ? const SizedBox(
+                              width: 22, height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              'Save Changes',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 15, fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ── Role switch dialog ───────────────────────────────────────────────────
+
+  void _showRoleSwitchDialog(BuildContext context, String targetRole) {
+    final theme = widget.theme;
+    final targetLabel = targetRole == 'landOwner' ? 'Land Owner' : 'Farmer';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Switch to $targetLabel',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'You will be switched to the $targetLabel view. '
+          'You can switch back at any time.',
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.plusJakartaSans(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                final uid = widget.firebaseUser.uid;
+                UserSession.instance.setRole(
+                  targetRole == 'landOwner'
+                      ? AppUserRole.landOwner
+                      : AppUserRole.farmer,
+                );
+                await FirebaseAuthService.instance.updateUserRole(uid, targetRole);
+              } catch (_) {}
+              if (!mounted) return;
+              if (targetRole == 'landOwner') {
+                context.go(AppRoutes.myLands);
+              } else {
+                context.go(AppRoutes.landListings);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            child: Text(
+              'Switch',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _statCard(ThemeData theme, String value, String label) {

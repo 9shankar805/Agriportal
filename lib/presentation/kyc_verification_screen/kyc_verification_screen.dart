@@ -23,6 +23,10 @@ class KycVerificationScreen extends StatefulWidget {
 
 class _KycVerificationScreenState extends State<KycVerificationScreen> {
   final _formKey        = GlobalKey<FormState>();
+  final _nameCtrl       = TextEditingController();
+  final _phoneCtrl      = TextEditingController();
+  final _occupationCtrl = TextEditingController();
+  final _dobCtrl        = TextEditingController();
   final _streetCtrl     = TextEditingController();
   final _cityCtrl       = TextEditingController();
   final _districtCtrl   = TextEditingController();
@@ -44,6 +48,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _occupationCtrl.dispose();
+    _dobCtrl.dispose();
     _streetCtrl.dispose();
     _cityCtrl.dispose();
     _districtCtrl.dispose();
@@ -134,12 +142,18 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     try {
       await FirestoreService.instance.submitKyc(
         uid: uid,
+        name: _nameCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
         addressData: {
           'street':   _streetCtrl.text.trim(),
           'city':     _cityCtrl.text.trim(),
           'district': _districtCtrl.text.trim(),
           'province': _provinceCtrl.text.trim(),
           'ward':     _wardCtrl.text.trim(),
+          if (_occupationCtrl.text.trim().isNotEmpty)
+            'occupation': _occupationCtrl.text.trim(),
+          if (_dobCtrl.text.trim().isNotEmpty)
+            'dateOfBirth': _dobCtrl.text.trim(),
         },
         documents: {
           'citizenshipFront': _frontUrl!,
@@ -328,6 +342,72 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
             const SizedBox(height: 24),
             _buildProgressRow(theme),
+            const SizedBox(height: 24),
+
+            // ── Personal Information ──────────────────────────────────────
+            _buildSectionHeader(theme, 'Personal Information', 'person'),
+            const SizedBox(height: 12),
+
+            // Full Name (mandatory)
+            _buildTextField(
+              theme, _nameCtrl, 'Full Name *', 'person_outline',
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Full name is required' : null,
+            ),
+            const SizedBox(height: 12),
+
+            // Phone Number (mandatory)
+            _buildTextField(
+              theme, _phoneCtrl, 'Phone Number *', 'phone',
+              keyboardType: TextInputType.phone,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Phone number is required';
+                final cleaned = v.trim();
+                if (!RegExp(r'^[+0-9]').hasMatch(cleaned)) {
+                  return 'Enter a valid phone number';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Occupation (optional)
+            _buildTextField(
+              theme, _occupationCtrl, 'Occupation (optional)', 'work_outline',
+            ),
+            const SizedBox(height: 12),
+
+            // Date of Birth (optional) — tap to open date picker
+            GestureDetector(
+              onTap: () async {
+                final now = DateTime.now();
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime(now.year - 25),
+                  firstDate: DateTime(1940),
+                  lastDate: DateTime(now.year - 16),
+                  builder: (ctx, child) => Theme(
+                    data: Theme.of(ctx).copyWith(
+                      colorScheme: Theme.of(ctx).colorScheme.copyWith(
+                        primary: Theme.of(ctx).colorScheme.primary,
+                      ),
+                    ),
+                    child: child!,
+                  ),
+                );
+                if (picked != null && mounted) {
+                  _dobCtrl.text =
+                      '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                  setState(() {});
+                }
+              },
+              child: AbsorbPointer(
+                child: _buildTextField(
+                  theme, _dobCtrl, 'Date of Birth (optional)', 'calendar_today',
+                ),
+              ),
+            ),
+
             const SizedBox(height: 24),
 
             // ── Citizenship Documents ──────────────────────────────────────
@@ -636,9 +716,13 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
   Widget _buildProgressRow(ThemeData theme) {
     final steps = [
-      {'label': 'ID Front', 'done': _frontUrl != null},
-      {'label': 'ID Back',  'done': _backUrl  != null},
-      {'label': 'Selfie',   'done': _selfieUrl != null},
+      {'label': 'ID Front',      'done': _frontUrl != null},
+      {'label': 'ID Back',       'done': _backUrl  != null},
+      {'label': 'Selfie',        'done': _selfieUrl != null},
+      {
+        'label': 'Personal Info',
+        'done': _nameCtrl.text.isNotEmpty && _phoneCtrl.text.isNotEmpty,
+      },
       {
         'label': 'Address',
         'done': _streetCtrl.text.isNotEmpty && _cityCtrl.text.isNotEmpty,

@@ -1,0 +1,20 @@
+import { avatarColor, initials } from '@/lib/utils';
+
+interface AvatarProps {
+  name: string;
+  size?: number;
+  radius?: string;
+  className?: string;
+}
+
+export default function Avatar({ name, size = 36, radius = '50%', className = '' }: AvatarProps) {
+  return (
+    <div
+      className={`flex items-center justify-center font-bold text-white flex-shrink-0 ${className}`}
+      style={{ width: size, height: size, borderRadius: radius, background: avatarColor(name), fontSize: size * 0.38 }}
+      aria-label={name}
+    >
+      {initials(name)}
+    </div>
+  );
+}

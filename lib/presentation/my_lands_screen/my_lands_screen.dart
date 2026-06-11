@@ -302,11 +302,57 @@ class _MyLandsScreenState extends State<MyLandsScreen>
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
-  /// Check wallet balance before opening the Add Land form.
+  /// Check KYC + wallet balance before opening the Add Land form.
   Future<void> _openAddLandForm() async {
     // Guard: must be signed in
     if (UserSession.instance.uid.isEmpty) {
       _showSnack('Please sign in to list a land', AppTheme.warning);
+      return;
+    }
+
+    // ── KYC check ──────────────────────────────────────────────────────────
+    final userData = await FirestoreService.instance.getUser(UserSession.instance.uid);
+    final kycStatus = userData?['kycStatus'] as String? ?? 'pending';
+    if (kycStatus != 'verified') {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('KYC Verification Required',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+          content: Text(
+            kycStatus == 'pending'
+                ? 'Your KYC is pending admin review. You can list land once approved. This usually takes 1–2 business days.'
+                : 'Your KYC was not approved. Please resubmit clearer documents to list land.',
+            style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Later',
+                  style: GoogleFonts.plusJakartaSans(color: AppTheme.primary)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                context.push(AppRoutes.kycVerification);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999)),
+                elevation: 0,
+              ),
+              child: Text(
+                kycStatus == 'pending' ? 'View KYC Status' : 'Submit KYC',
+                style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w600, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      );
       return;
     }
 
@@ -574,89 +620,220 @@ class _MyLandsScreenState extends State<MyLandsScreen>
     );
   }
 
+  // ── Advanced LandOwner Top Bar ─────────────────────────────────────────────
   Widget _buildHeader(ThemeData theme) {
+    final user = UserSession.instance.firebaseUser;
+    final name = user?.displayName ?? UserSession.instance.displayName;
+    final photoUrl = user?.photoURL ?? '';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'L';
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
     return Container(
-      color: theme.colorScheme.surface,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Row(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.primary, Color(0xFF1B5E20)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppTheme.primary,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: CustomIconWidget(
-                iconName: 'landscape',
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // ── Row 1: Avatar + Name + Notif + Settings ──────────────────
+          Row(
             children: [
-              Text(
-                'My Lands',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              Text(
-                'Land Owner Dashboard',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  color: theme.colorScheme.outline,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Stack(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: CustomIconWidget(
-                    iconName: 'notifications_outlined',
-                    color: theme.colorScheme.onSurface,
-                    size: 20,
-                  ),
-                ),
-              ),
-              if (_pendingApplicationsCount > 0)
-                Positioned(
-                  top: 5,
-                  right: 5,
-                  child: Container(
-                    width: 16,
-                    height: 16,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.error,
-                      shape: BoxShape.circle,
+              // Avatar
+              GestureDetector(
+                onTap: () => context.go(AppRoutes.profile),
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: Colors.white.withAlpha(50),
+                      backgroundImage: photoUrl.isNotEmpty
+                          ? NetworkImage(photoUrl)
+                          : null,
+                      child: photoUrl.isEmpty
+                          ? Text(initial,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ))
+                          : null,
                     ),
-                    child: Center(
-                      child: Text(
-                        '$_pendingApplicationsCount',
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
+                    Positioned(
+                      bottom: 0, right: 0,
+                      child: Container(
+                        width: 12, height: 12,
+                        decoration: BoxDecoration(
+                          color: AppTheme.secondary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$greeting,',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: Colors.white.withAlpha(180),
+                      ),
+                    ),
+                    Text(
+                      name,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    // KYC status pill
+                    FutureBuilder<Map<String, dynamic>?>(
+                      future: FirestoreService.instance.getUser(UserSession.instance.uid),
+                      builder: (ctx, snap) {
+                        final kyc = snap.data?['kycStatus'] as String? ?? 'pending';
+                        final isVerified = kyc == 'verified';
+                        return Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isVerified
+                                ? Colors.white.withAlpha(40)
+                                : AppTheme.warning.withAlpha(200),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CustomIconWidget(
+                                iconName: isVerified ? 'verified' : 'hourglass_top',
+                                color: Colors.white,
+                                size: 10,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isVerified ? 'KYC Verified' : 'KYC Pending',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // Notifications bell
+              Stack(
+                children: [
+                  GestureDetector(
+                    onTap: () => context.push(AppRoutes.notifications),
+                    child: Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(30),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: CustomIconWidget(
+                          iconName: 'notifications_outlined',
                           color: Colors.white,
+                          size: 20,
                         ),
                       ),
                     ),
                   ),
+                  if (_pendingApplicationsCount > 0)
+                    Positioned(
+                      top: 4, right: 4,
+                      child: Container(
+                        width: 16, height: 16,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.accent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$_pendingApplicationsCount',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 8),
+              // Settings
+              GestureDetector(
+                onTap: () => context.go(AppRoutes.profile),
+                child: Container(
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(30),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: CustomIconWidget(
+                      iconName: 'settings',
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
                 ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // ── Row 2: Stats chips ─────────────────────────────────────────
+          Row(
+            children: [
+              _GradientStatChip(
+                icon: 'landscape',
+                value: '${_allLands.length}',
+                label: 'Listings',
+              ),
+              const SizedBox(width: 8),
+              _GradientStatChip(
+                icon: 'people',
+                value: '$_totalApplications',
+                label: 'Applicants',
+              ),
+              const SizedBox(width: 8),
+              _GradientStatChip(
+                icon: 'pending_actions',
+                value: '$_pendingApplicationsCount',
+                label: 'Pending',
+                highlight: _pendingApplicationsCount > 0,
+              ),
+              const SizedBox(width: 8),
+              _GradientStatChip(
+                icon: 'payments',
+                value: 'NPR ${(_totalMonthlyRevenue / 1000).toStringAsFixed(0)}k',
+                label: 'Revenue',
+              ),
             ],
           ),
         ],
@@ -664,90 +841,59 @@ class _MyLandsScreenState extends State<MyLandsScreen>
     );
   }
 
-  Widget _buildStatsRow(ThemeData theme) {
-    return Container(
-      color: theme.colorScheme.surface,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Row(
-        children: [
-          _StatPill(
-            icon: 'landscape',
-            value: '${_allLands.length}',
-            label: 'Listings',
-            color: AppTheme.primary,
-          ),
-          const SizedBox(width: 8),
-          _StatPill(
-            icon: 'people',
-            value: '$_totalApplications',
-            label: 'Applicants',
-            color: AppTheme.info,
-          ),
-          const SizedBox(width: 8),
-          _StatPill(
-            icon: 'pending_actions',
-            value: '$_pendingApplicationsCount',
-            label: 'Pending',
-            color: AppTheme.warning,
-          ),
-          const SizedBox(width: 8),
-          _StatPill(
-            icon: 'payments',
-            value: 'NPR ${(_totalMonthlyRevenue / 1000).toStringAsFixed(0)}k',
-            label: 'Monthly',
-            color: AppTheme.success,
-          ),
-        ],
-      ),
-    );
-  }
+  // Keep _buildStatsRow returning empty (stats now inside _buildHeader)
+  Widget _buildStatsRow(ThemeData theme) => const SizedBox.shrink();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Stat pill
+// Gradient stat chip for LandOwner header
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _StatPill extends StatelessWidget {
+class _GradientStatChip extends StatelessWidget {
   final String icon;
   final String value;
   final String label;
-  final Color color;
+  final bool highlight;
 
-  const _StatPill({
+  const _GradientStatChip({
     required this.icon,
     required this.value,
     required this.label,
-    required this.color,
+    this.highlight = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
         decoration: BoxDecoration(
-          color: color.withAlpha(20),
+          color: highlight
+              ? AppTheme.accent.withAlpha(200)
+              : Colors.white.withAlpha(30),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withAlpha(55)),
+          border: Border.all(
+            color: Colors.white.withAlpha(40),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CustomIconWidget(iconName: icon, color: color, size: 14),
+            CustomIconWidget(iconName: icon, color: Colors.white, size: 14),
             const SizedBox(height: 4),
             Text(
               value,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: color,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
               ),
             ),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 9,
-                color: color.withAlpha(180),
+                color: Colors.white.withAlpha(180),
                 fontWeight: FontWeight.w500,
               ),
             ),

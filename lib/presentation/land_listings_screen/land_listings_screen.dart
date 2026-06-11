@@ -1,12 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_export.dart';
 import '../../core/firestore_service.dart';
 import '../../routes/app_routes.dart';
-import '../../widgets/custom_icon_widget.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/loading_skeleton_widget.dart';
 import './widgets/category_chip_widget.dart';
@@ -191,12 +189,17 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                 : <LandModel>[];
             final filteredLands = _applyFiltersToList(allLands);
 
-            return RefreshIndicator(
+            return Column(
+              children: [
+                // ── Fixed app bar (not part of scroll view) ───────────────
+                ListingsAppBarWidget(),
+                // ── Scrollable content below ──────────────────────────────
+                Expanded(
+                  child: RefreshIndicator(
               onRefresh: () async {},
               color: theme.colorScheme.primary,
               child: CustomScrollView(
                 slivers: [
-                  SliverToBoxAdapter(child: ListingsAppBarWidget()),
                   SliverToBoxAdapter(
                     child: SearchFilterWidget(
                       onSearch: _onSearch,
@@ -392,7 +395,10 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                     ),
                 ],
               ),
-            );
+            ),
+          ),
+          ],
+        );
           },
         ),
       ),
