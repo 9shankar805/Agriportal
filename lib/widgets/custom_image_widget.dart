@@ -11,6 +11,8 @@ extension ImageTypeExtension on String {
       return ImageType.svg;
     } else if (startsWith('file: //')) {
       return ImageType.file;
+    } else if (endsWith('.jpg') || endsWith('.jpeg') || endsWith('.png')) {
+      return ImageType.png;
     } else {
       return ImageType.png;
     }
@@ -144,22 +146,21 @@ class CustomImageWidget extends StatelessWidget {
             imageUrl: imageUrl!,
             color: color,
             placeholder: (context, url) => SizedBox(
-              height: 30,
-              width: 30,
-              child: LinearProgressIndicator(
-                color: Colors.grey.shade200,
-                backgroundColor: Colors.grey.shade100,
+              height: height,
+              width: width,
+              child: Center(
+                child: SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
               ),
             ),
             errorWidget: (context, url, error) =>
-                errorWidget ??
-                Image.asset(
-                  placeHolder,
-                  height: height,
-                  width: width,
-                  fit: fit ?? BoxFit.cover,
-                  semanticLabel: semanticLabel,
-                ),
+                errorWidget ?? _buildFallback(),
           );
         case ImageType.png:
         default:
@@ -174,5 +175,22 @@ class CustomImageWidget extends StatelessWidget {
       }
     }
     return SizedBox();
+  }
+
+  /// Fallback widget shown when a network image fails to load.
+  Widget _buildFallback() {
+    return Container(
+      height: height,
+      width: width,
+      color: Colors.grey.shade100,
+      child: Center(
+        child: Icon(
+          Icons.image_not_supported_outlined,
+          color: Colors.grey.shade400,
+          size: (height != null && height! < 60) ? 18 : 32,
+          semanticLabel: semanticLabel ?? 'Image unavailable',
+        ),
+      ),
+    );
   }
 }

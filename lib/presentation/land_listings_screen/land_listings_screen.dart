@@ -1,9 +1,13 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_export.dart';
+import '../../core/app_localizations.dart';
 import '../../core/firestore_service.dart';
+import '../../models/nepal_location_model.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/loading_skeleton_widget.dart';
@@ -12,100 +16,6 @@ import './widgets/featured_banner_widget.dart';
 import './widgets/land_listing_card_widget.dart';
 import './widgets/listings_app_bar_widget.dart';
 import './widgets/search_filter_widget.dart';
-
-class LandModel {
-  final String id;
-  final String title;
-  final String province;
-  final String district;
-  final String municipality;
-  final double areaRopani;
-  final String soilType;
-  final String waterSource;
-  final bool hasIrrigation;
-  final double leasePriceMonthly;
-  final String status;
-  final String imageUrl;
-  final String semanticLabel;
-  final bool isVerified;
-  final String category;
-  final String ownerName;
-  final double ownerRating;
-  final double? latitude;
-  final double? longitude;
-
-  const LandModel({
-    required this.id,
-    required this.title,
-    required this.province,
-    required this.district,
-    required this.municipality,
-    required this.areaRopani,
-    required this.soilType,
-    required this.waterSource,
-    required this.hasIrrigation,
-    required this.leasePriceMonthly,
-    required this.status,
-    required this.imageUrl,
-    required this.semanticLabel,
-    required this.isVerified,
-    required this.category,
-    required this.ownerName,
-    required this.ownerRating,
-    this.latitude,
-    this.longitude,
-  });
-
-  factory LandModel.fromMap(Map<String, dynamic> map) {
-    return LandModel(
-      id: map['id'] as String? ?? '',
-      title: map['title'] as String? ?? '',
-      province: map['province'] as String? ?? '',
-      district: map['district'] as String? ?? '',
-      municipality: map['municipality'] as String? ?? '',
-      areaRopani: (map['area_ropani'] as num? ?? 0).toDouble(),
-      soilType: map['soil_type'] as String? ?? '',
-      waterSource: map['water_source'] as String? ?? '',
-      hasIrrigation: map['has_irrigation'] as bool? ?? false,
-      leasePriceMonthly: (map['lease_price_monthly'] as num? ?? 0).toDouble(),
-      status: map['status'] as String? ?? 'approved',
-      imageUrl: map['image_url'] as String? ?? '',
-      semanticLabel: map['semantic_label'] as String? ?? '',
-      isVerified: map['is_verified'] as bool? ?? false,
-      category: map['category'] as String? ?? 'Other',
-      ownerName: map['owner_name'] as String? ?? '',
-      ownerRating: (map['owner_rating'] as num? ?? 0).toDouble(),
-      latitude: (map['latitude'] as num?)?.toDouble(),
-      longitude: (map['longitude'] as num?)?.toDouble(),
-    );
-  }
-
-  /// Build from a Firestore DocumentSnapshot — field names match Firestore schema
-  factory LandModel.fromFirestore(DocumentSnapshot doc) {
-    final d = doc.data() as Map<String, dynamic>;
-    return LandModel(
-      id:                 doc.id,
-      title:              d['title']              as String? ?? '',
-      province:           d['province']           as String? ?? '',
-      district:           d['district']           as String? ?? d['location'] as String? ?? '',
-      municipality:       d['municipality']       as String? ?? '',
-      areaRopani:         (d['areaBigha']         as num? ?? d['area'] as num? ?? 0).toDouble(),
-      soilType:           d['soilType']           as String? ?? '',
-      waterSource:        d['waterSource']        as String? ?? '',
-      hasIrrigation:      d['hasIrrigation']      as bool? ?? false,
-      leasePriceMonthly:  (d['pricePerBigha']     as num? ?? d['price'] as num? ?? 0).toDouble(),
-      status:             d['status']             as String? ?? 'active',
-      imageUrl:           d['imageUrl']           as String? ?? d['image_url'] as String? ?? '',
-      semanticLabel:      d['title']              as String? ?? '',
-      isVerified:         d['isVerified']         as bool? ?? false,
-      category:           d['category']           as String? ?? 'Other',
-      ownerName:          d['ownerName']          as String? ?? '',
-      ownerRating:        (d['ownerRating']       as num? ?? 0).toDouble(),
-      latitude:           (d['latitude']          as num?)?.toDouble(),
-      longitude:          (d['longitude']         as num?)?.toDouble(),
-    );
-  }
-}
 
 class LandListingsScreen extends StatefulWidget {
   const LandListingsScreen({super.key});
@@ -118,6 +28,11 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
   String _searchQuery = '';
   String _selectedCategory = 'All';
   String _selectedProvince = 'All';
+  String _selectedDistrict = 'All';
+  double _minPrice = 0;
+  double _maxPrice = 1000000;
+  double _minArea = 0;
+  double _maxArea = 100;
 
   final List<String> _categories = [
     'All',
@@ -126,13 +41,54 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
     'Orchard',
     'Pasture',
   ];
-  final List<String> _provinces = [
-    'All',
-    'Bagmati',
-    'Gandaki',
-    'Lumbini',
-    'Koshi',
-  ];
+  List<String> _provinces = ['All'];
+  List<String> _districts = ['All'];
+  NepalLocationResponse? _nepalLocationData;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNepalLocationData();
+    LanguageController.instance.addListener(_onLanguageChanged);
+  }
+
+  @override
+  void dispose() {
+    LanguageController.instance.removeListener(_onLanguageChanged);
+    super.dispose();
+  }
+
+  void _onLanguageChanged() {
+    setState(() {});
+  }
+
+  Future<void> _loadNepalLocationData() async {
+    try {
+      final String response = await rootBundle.loadString('assets/nepal_location.json');
+      final data = json.decode(response);
+      setState(() {
+        _nepalLocationData = NepalLocationResponse.fromJson(data);
+        _provinces = ['All', ..._nepalLocationData!.provinceList.map((p) => p.nameEn)];
+      });
+    } catch (e) {
+      debugPrint('Error loading nepal location data: $e');
+    }
+  }
+
+  void _onProvinceChanged(String province) {
+    setState(() {
+      _selectedProvince = province;
+      if (_nepalLocationData != null && province != 'All') {
+        final selectedProv = _nepalLocationData!.provinceList.firstWhere(
+          (p) => p.nameEn == province,
+        );
+        _districts = ['All', ...selectedProv.districtList.map((d) => d.nameEn)];
+      } else {
+        _districts = ['All'];
+      }
+      _selectedDistrict = 'All';
+    });
+  }
 
   List<LandModel> _applyFiltersToList(List<LandModel> allLands) {
     List<LandModel> result = List.from(allLands);
@@ -142,6 +98,18 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
     if (_selectedProvince != 'All') {
       result = result.where((l) => l.province == _selectedProvince).toList();
     }
+    if (_selectedDistrict != 'All') {
+      result = result.where((l) => l.district == _selectedDistrict).toList();
+    }
+    // Price range filter
+    result = result
+        .where((l) =>
+            l.leasePriceMonthly >= _minPrice && l.leasePriceMonthly <= _maxPrice)
+        .toList();
+    // Area range filter
+    result = result
+        .where((l) => l.areaRopani >= _minArea && l.areaRopani <= _maxArea)
+        .toList();
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       result = result
@@ -173,6 +141,7 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
     final isTablet = size.width >= 600;
+    final t = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -205,8 +174,24 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                       onSearch: _onSearch,
                       selectedProvince: _selectedProvince,
                       provinces: _provinces,
-                      onProvinceChanged: (p) =>
-                          setState(() => _selectedProvince = p),
+                      onProvinceChanged: _onProvinceChanged,
+                      selectedDistrict: _selectedDistrict,
+                      districts: _districts,
+                      onDistrictChanged: (d) =>
+                          setState(() => _selectedDistrict = d),
+                      minPrice: _minPrice,
+                      maxPrice: _maxPrice,
+                      onPriceRangeChanged: (range) => setState(() {
+                        _minPrice = range.start;
+                        _maxPrice = range.end;
+                      }),
+                      minArea: _minArea,
+                      maxArea: _maxArea,
+                      onAreaRangeChanged: (range) => setState(() {
+                        _minArea = range.start;
+                        _maxArea = range.end;
+                      }),
+                      nepalLocationData: _nepalLocationData,
                     ),
                   ),
                   SliverToBoxAdapter(
@@ -227,7 +212,7 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
                       child: Text(
-                        'Recommended Lands',
+                        t.recommendedLands,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -261,6 +246,7 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                                   land: land,
                                   isHorizontal: true,
                                   onTap: () => _onLandTap(land),
+                                  nepalLocationData: _nepalLocationData,
                                 );
                               },
                             ),
@@ -277,7 +263,7 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'All Listings',
+                                t.allListings,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -285,7 +271,7 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                                 ),
                               ),
                               Text(
-                                '${filteredLands.length} lands available',
+                                '${filteredLands.length} ${t.landsAvailable}',
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
                                   color: theme.colorScheme.outline,
@@ -311,7 +297,7 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Sort',
+                                  t.sort,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
@@ -345,9 +331,8 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                         height: 300,
                         child: EmptyStateWidget(
                           iconName: 'landscape',
-                          title: 'No Lands Found',
-                          subtitle:
-                              'No agricultural land listings yet. Check back soon or adjust your filters.',
+                          title: t.noLandsFound,
+                          subtitle: t.noLandsSubtitle,
                         ),
                       ),
                     )
@@ -360,6 +345,7 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                             land: filteredLands[index],
                             isHorizontal: false,
                             onTap: () => _onLandTap(filteredLands[index]),
+                            nepalLocationData: _nepalLocationData,
                           ),
                           childCount: filteredLands.length,
                         ),
@@ -386,6 +372,7 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                                 isHorizontal: false,
                                 isListView: true,
                                 onTap: () => _onLandTap(land),
+                                nepalLocationData: _nepalLocationData,
                               ),
                             );
                           },

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/app_localizations.dart';
+import '../../../core/firestore_service.dart';
+import '../../../models/nepal_location_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_icon_widget.dart';
 import '../../../widgets/custom_image_widget.dart';
@@ -12,12 +15,14 @@ class LandListingCardWidget extends StatefulWidget {
   final bool isHorizontal;
   final bool isListView;
   final VoidCallback onTap;
+  final NepalLocationResponse? nepalLocationData;
 
   const LandListingCardWidget({
     required this.land,
     required this.isHorizontal,
     this.isListView = false,
     required this.onTap,
+    this.nepalLocationData,
     super.key,
   });
 
@@ -27,6 +32,134 @@ class LandListingCardWidget extends StatefulWidget {
 
 class _LandListingCardWidgetState extends State<LandListingCardWidget> {
   bool _isSaved = false;
+  bool _isLoading = false;
+  int _currentImageIndex = 0;
+  final PageController _pageController = PageController(initialPage: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialSaveStatus();
+    LanguageController.instance.addListener(_onLanguageChanged);
+  }
+
+  @override
+  void dispose() {
+    LanguageController.instance.removeListener(_onLanguageChanged);
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  List<String> _getAllImages() {
+    final images = <String>[];
+    if (widget.land.imageUrl.isNotEmpty) {
+      images.add(widget.land.imageUrl);
+    }
+    for (final url in widget.land.imageUrls) {
+      if (!images.contains(url)) {
+        images.add(url);
+      }
+    }
+    return images.isNotEmpty ? images : ['https://images.pexels.com/photos/974314/pexels-photo-974314.jpeg'];
+  }
+
+  void _onLanguageChanged() {
+    setState(() {});
+  }
+
+  String _getTranslatedLocationName(String nameEn) {
+    if (widget.nepalLocationData == null) return nameEn;
+    
+    for (final province in widget.nepalLocationData!.provinceList) {
+      if (province.nameEn == nameEn) {
+        if (LanguageController.instance.isNepali && province.nameNp != null) {
+          return province.nameNp!;
+        }
+        return province.nameEn;
+      }
+      
+      for (final district in province.districtList) {
+        if (district.nameEn == nameEn) {
+          if (LanguageController.instance.isNepali && district.nameNp != null) {
+            return district.nameNp!;
+          }
+          return district.nameEn;
+        }
+        
+        for (final municipality in district.municipalityList) {
+          if (municipality.nameEn == nameEn) {
+            if (LanguageController.instance.isNepali && municipality.nameNp != null) {
+              return municipality.nameNp!;
+            }
+            return municipality.nameEn;
+          }
+        }
+      }
+    }
+    
+    return nameEn;
+  }
+
+  Future<void> _checkInitialSaveState() async {
+    try {
+      final isSaved = await FirestoreService.instance.isLandSaved(widget.land.id);
+      if (mounted) {
+        setState(() => _isSaved = isSaved);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _toggleSave() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      if (_isSaved) {
+        await FirestoreService.instance.unsaveLand(widget.land.id);
+      } else {
+        // Convert LandModel to Map for saving
+        final landData = {
+          'title': widget.land.title,
+          'province': widget.land.province,
+          'district': widget.land.district,
+          'municipality': widget.land.municipality,
+          'areaRopani': widget.land.areaRopani,
+          'soilType': widget.land.soilType,
+          'waterSource': widget.land.waterSource,
+          'hasIrrigation': widget.land.hasIrrigation,
+          'leasePriceMonthly': widget.land.leasePriceMonthly,
+          'status': widget.land.status,
+          'imageUrl': widget.land.imageUrl,
+          'semanticLabel': widget.land.semanticLabel,
+          'isVerified': widget.land.isVerified,
+          'category': widget.land.category,
+          'ownerName': widget.land.ownerName,
+          'ownerRating': widget.land.ownerRating,
+          'latitude': widget.land.latitude,
+          'longitude': widget.land.longitude,
+          'description': widget.land.description,
+          'imageUrls': widget.land.imageUrls,
+          'landFeatures': widget.land.landFeatures,
+          'suggestedCrops': widget.land.suggestedCrops,
+        };
+        await FirestoreService.instance.saveLand(widget.land.id, landData);
+      }
+      if (mounted) {
+        setState(() => _isSaved = !_isSaved);
+      }
+    } catch (e) {
+      // Show error snackbar
+      if (mounted) {
+        final t = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t.failedToUpdateSavedLands)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +171,8 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
 
   Widget _buildGridCard(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
+    final images = _getAllImages();
     return Container(
       width: widget.isHorizontal ? 195 : null,
       margin: widget.isHorizontal ? const EdgeInsets.only(right: 12) : null,
@@ -65,14 +200,47 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                 ClipRRect(
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: CustomImageWidget(
-                    imageUrl: widget.land.imageUrl,
+                  child: SizedBox(
                     width: double.infinity,
                     height: widget.isHorizontal ? 115 : 140,
-                    fit: BoxFit.cover,
-                    semanticLabel: widget.land.semanticLabel,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: images.length,
+                      onPageChanged: (index) => setState(() => _currentImageIndex = index),
+                      itemBuilder: (context, index) {
+                        return CustomImageWidget(
+                          imageUrl: images[index],
+                          width: double.infinity,
+                          height: widget.isHorizontal ? 115 : 140,
+                          fit: BoxFit.cover,
+                          semanticLabel: widget.land.semanticLabel,
+                        );
+                      },
+                    ),
                   ),
                 ),
+                if (images.length > 1)
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    right: 8,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(images.length, (index) {
+                        return Container(
+                          width: _currentImageIndex == index ? 16 : 6,
+                          height: 6,
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          decoration: BoxDecoration(
+                            color: _currentImageIndex == index
+                                ? Colors.white
+                                : Colors.white.withAlpha(128),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
                 if (widget.land.isVerified)
                   Positioned(
                     top: 8,
@@ -94,7 +262,7 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                           ),
                           const SizedBox(width: 2),
                           Text(
-                            'Verified',
+                            t.verified,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
@@ -109,7 +277,7 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                   top: 8,
                   right: 8,
                   child: GestureDetector(
-                    onTap: () => setState(() => _isSaved = !_isSaved),
+                    onTap: _isLoading ? null : _toggleSave,
                     child: Container(
                       width: 28,
                       height: 28,
@@ -124,14 +292,22 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                         ],
                       ),
                       child: Center(
-                        child: CustomIconWidget(
-                          iconName:
-                              _isSaved ? 'favorite' : 'favorite_border',
-                          color: _isSaved
-                              ? const Color(0xFFE53935)
-                              : Colors.grey,
-                          size: 14,
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                ),
+                              )
+                            : CustomIconWidget(
+                                iconName:
+                                    _isSaved ? 'favorite' : 'favorite_border',
+                                color: _isSaved
+                                    ? const Color(0xFFE53935)
+                                    : Colors.grey,
+                                size: 14,
+                              ),
                       ),
                     ),
                   ),
@@ -165,7 +341,7 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
-                          '${widget.land.municipality}, ${widget.land.district}',
+                          '${_getTranslatedLocationName(widget.land.municipality)}, ${_getTranslatedLocationName(widget.land.district)}',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 10,
                             color: theme.colorScheme.outline,
@@ -188,7 +364,7 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
-                            'NPR ${widget.land.leasePriceMonthly.toStringAsFixed(0)}/mo',
+                            'NPR ${widget.land.leasePriceMonthly.toStringAsFixed(0)}${t.perMonthSuffix}',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -223,6 +399,7 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
 
   Widget _buildListCard(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -302,19 +479,26 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                         ),
                         const SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () =>
-                              setState(() => _isSaved = !_isSaved),
+                          onTap: _isLoading ? null : _toggleSave,
                           child: Padding(
                             padding: const EdgeInsets.only(top: 1),
-                            child: CustomIconWidget(
-                              iconName: _isSaved
-                                  ? 'favorite'
-                                  : 'favorite_border',
-                              color: _isSaved
-                                  ? const Color(0xFFE53935)
-                                  : theme.colorScheme.outline,
-                              size: 17,
-                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 17,
+                                    height: 17,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 1.5,
+                                    ),
+                                  )
+                                : CustomIconWidget(
+                                    iconName: _isSaved
+                                        ? 'favorite'
+                                        : 'favorite_border',
+                                    color: _isSaved
+                                        ? const Color(0xFFE53935)
+                                        : theme.colorScheme.outline,
+                                    size: 17,
+                                  ),
                           ),
                         ),
                       ],
@@ -331,7 +515,7 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
-                            '${widget.land.municipality}, ${widget.land.district}',
+                            '${_getTranslatedLocationName(widget.land.municipality)}, ${_getTranslatedLocationName(widget.land.district)}',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               color: theme.colorScheme.outline,
@@ -373,7 +557,7 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
-                              'NPR ${widget.land.leasePriceMonthly.toStringAsFixed(0)}/mo',
+                              'NPR ${widget.land.leasePriceMonthly.toStringAsFixed(0)}${t.perMonthSuffix}',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,

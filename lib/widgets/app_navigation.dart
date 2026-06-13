@@ -1,8 +1,11 @@
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/user_session.dart';
+import '../core/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_icon_widget.dart';
 
@@ -11,19 +14,36 @@ import '../widgets/custom_icon_widget.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TabSpec {
-  final String label;
+  final String labelKey;
   final String activeIcon;
   final String inactiveIcon;
   final int branchIndex;
-  final int? badgeCount;
+  final bool showUnreadBadge;
 
   const _TabSpec({
-    required this.label,
+    required this.labelKey,
     required this.activeIcon,
     required this.inactiveIcon,
     required this.branchIndex,
-    this.badgeCount,
+    this.showUnreadBadge = false,
   });
+
+  String getLabel(AppLocalizations t) {
+    switch (labelKey) {
+      case 'explore':
+        return t.explore;
+      case 'myLands':
+        return t.myLands;
+      case 'applications':
+        return t.applications;
+      case 'messages':
+        return t.messages;
+      case 'profile':
+        return t.profile;
+      default:
+        return '';
+    }
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,31 +51,31 @@ class _TabSpec {
 // Branch 0: Explore · Branch 2: Applications · Branch 3: Chat · Branch 4: Profile
 // ─────────────────────────────────────────────────────────────────────────────
 
-const List<_TabSpec> _farmerTabs = [
-  _TabSpec(
-    label: 'Explore',
+List<_TabSpec> get _farmerTabs => [
+  const _TabSpec(
     activeIcon: 'explore',
     inactiveIcon: 'explore_outlined',
     branchIndex: 0,
+    labelKey: 'explore',
   ),
-  _TabSpec(
-    label: 'Applications',
+  const _TabSpec(
     activeIcon: 'assignment',
     inactiveIcon: 'assignment_outlined',
     branchIndex: 2,
+    labelKey: 'applications',
   ),
-  _TabSpec(
-    label: 'Messages',
+  const _TabSpec(
     activeIcon: 'chat_bubble',
-    inactiveIcon: 'chat_bubble_outline',
+    inactiveIcon: 'chat_bubble_outlined',
     branchIndex: 3,
-    badgeCount: 3,
+    showUnreadBadge: true,
+    labelKey: 'messages',
   ),
-  _TabSpec(
-    label: 'Profile',
+  const _TabSpec(
     activeIcon: 'person',
-    inactiveIcon: 'person_outline',
+    inactiveIcon: 'person_outlined',
     branchIndex: 4,
+    labelKey: 'profile',
   ),
 ];
 
@@ -64,58 +84,110 @@ const List<_TabSpec> _farmerTabs = [
 // Branch 1: My Lands · Branch 2: Applications · Branch 3: Chat · Branch 4: Profile
 // ─────────────────────────────────────────────────────────────────────────────
 
-const List<_TabSpec> _ownerTabs = [
-  _TabSpec(
-    label: 'My Lands',
+List<_TabSpec> get _ownerTabs => [
+  const _TabSpec(
+    labelKey: 'myLands',
     activeIcon: 'landscape',
     inactiveIcon: 'landscape_outlined',
     branchIndex: 1,
   ),
-  _TabSpec(
-    label: 'Applications',
+  const _TabSpec(
+    labelKey: 'applications',
     activeIcon: 'assignment',
     inactiveIcon: 'assignment_outlined',
     branchIndex: 2,
   ),
-  _TabSpec(
-    label: 'Messages',
+  const _TabSpec(
+    labelKey: 'messages',
     activeIcon: 'chat_bubble',
-    inactiveIcon: 'chat_bubble_outline',
+    inactiveIcon: 'chat_bubble_outlined',
     branchIndex: 3,
-    badgeCount: 3,
+    showUnreadBadge: true,
   ),
-  _TabSpec(
-    label: 'Profile',
+  const _TabSpec(
+    labelKey: 'profile',
     activeIcon: 'person',
-    inactiveIcon: 'person_outline',
+    inactiveIcon: 'person_outlined',
     branchIndex: 4,
   ),
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Unread count helper — reads total unread from Firebase RTDB
+// ─────────────────────────────────────────────────────────────────────────────
+
+Stream<int> _totalUnreadStream() {
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid == null) return Stream.value(0);
+
+  return FirebaseDatabase.instance
+      .ref('conversations')
+      .onValue
+      .map((event) {
+    final snap = event.snapshot;
+    if (!snap.exists || snap.value == null) return 0;
+    final map = Map<String, dynamic>.from(snap.value as Map);
+    int total = 0;
+    for (final entry in map.values) {
+      if (entry is! Map) continue;
+      final data = Map<String, dynamic>.from(entry);
+      final aId = data['participantAId'] as String? ?? '';
+      final bId = data['participantBId'] as String? ?? '';
+      if (aId == uid) {
+        total += (data['unreadCountA'] as int? ?? 0);
+      } else if (bId == uid) {
+        total += (data['unreadCountB'] as int? ?? 0);
+      }
+    }
+    return total;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Widget
 // ─────────────────────────────────────────────────────────────────────────────
 
-class AppNavigation extends StatelessWidget {
+class AppNavigation extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const AppNavigation({required this.navigationShell, super.key});
+
+  @override
+  State<AppNavigation> createState() => _AppNavigationState();
+}
+
+class _AppNavigationState extends State<AppNavigation> {
+  @override
+  void initState() {
+    super.initState();
+    LanguageController.instance.addListener(_onLanguageChange);
+  }
+
+  @override
+  void dispose() {
+    LanguageController.instance.removeListener(_onLanguageChange);
+    super.dispose();
+  }
+
+  void _onLanguageChange() {
+    setState(() {});
+  }
 
   List<_TabSpec> get _tabs =>
       UserSession.instance.isLandOwner ? _ownerTabs : _farmerTabs;
 
   /// Maps the shell's current branch index → visual tab index
   int get _selectedVisualIndex {
-    final currentBranch = navigationShell.currentIndex;
+    final currentBranch = widget.navigationShell.currentIndex;
     final idx = _tabs.indexWhere((t) => t.branchIndex == currentBranch);
     return idx < 0 ? 0 : idx;
   }
 
   void _onTabTap(int visualIndex) {
     final tab = _tabs[visualIndex];
-    navigationShell.goBranch(
+    widget.navigationShell.goBranch(
       tab.branchIndex,
-      initialLocation: tab.branchIndex == navigationShell.currentIndex,
+      initialLocation: tab.branchIndex == widget.navigationShell.currentIndex,
     );
   }
 
@@ -124,37 +196,50 @@ class AppNavigation extends StatelessWidget {
     final theme = Theme.of(context);
     final isOwner = UserSession.instance.isLandOwner;
     final tabs = _tabs;
+    final t = AppLocalizations.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outlineVariant,
-            width: 0.8,
+    return StreamBuilder<int>(
+      stream: _totalUnreadStream(),
+      initialData: 0,
+      builder: (context, unreadSnap) {
+        final totalUnread = unreadSnap.data ?? 0;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border(
+              top: BorderSide(
+                color: theme.colorScheme.outlineVariant,
+                width: 0.8,
+              ),
+            ),
           ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Row(
-            children: List.generate(tabs.length, (i) {
-              final tab = tabs[i];
-              final isSelected = i == _selectedVisualIndex;
-              return Expanded(
-                child: _NavItem(
-                  tab: tab,
-                  isSelected: isSelected,
-                  isOwner: isOwner,
-                  onTap: () => _onTabTap(i),
-                ),
-              );
-            }),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: List.generate(tabs.length, (i) {
+                  final tab = tabs[i];
+                  final isSelected = i == _selectedVisualIndex;
+                  final badgeCount =
+                      tab.showUnreadBadge ? totalUnread : 0;
+                  return Expanded(
+                    child: _NavItem(
+                      tab: tab,
+                      isSelected: isSelected,
+                      isOwner: isOwner,
+                      badgeCount: badgeCount,
+                      onTap: () => _onTabTap(i),
+                      t: t,
+                    ),
+                  );
+                }),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -167,13 +252,17 @@ class _NavItem extends StatelessWidget {
   final _TabSpec tab;
   final bool isSelected;
   final bool isOwner;
+  final int badgeCount;
   final VoidCallback onTap;
+  final AppLocalizations t;
 
   const _NavItem({
     required this.tab,
     required this.isSelected,
     required this.isOwner,
+    required this.badgeCount,
     required this.onTap,
+    required this.t,
   });
 
   Color _activeColor(BuildContext context) {
@@ -197,7 +286,7 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon pill with optional badge
+            // Icon pill with optional live badge
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -220,17 +309,20 @@ class _NavItem extends StatelessWidget {
                     size: 22,
                   ),
                 ),
-                // Notification badge
-                if (tab.badgeCount != null && tab.badgeCount! > 0 && !isSelected)
+                // Live unread badge — only when not selected and count > 0
+                if (badgeCount > 0 && !isSelected)
                   Positioned(
                     right: 8,
                     top: 0,
                     child: Container(
-                      width: 16,
-                      height: 16,
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.error,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(999),
                         border: Border.all(
                           color: theme.colorScheme.surface,
                           width: 1.5,
@@ -238,7 +330,7 @@ class _NavItem extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          '${tab.badgeCount}',
+                          badgeCount > 99 ? '99+' : '$badgeCount',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 8,
                             fontWeight: FontWeight.w700,
@@ -260,7 +352,7 @@ class _NavItem extends StatelessWidget {
                     isSelected ? FontWeight.w600 : FontWeight.w400,
                 color: isSelected ? activeColor : inactiveColor,
               ),
-              child: Text(tab.label),
+              child: Text(tab.getLabel(t)),
             ),
           ],
         ),

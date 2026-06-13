@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/user_session.dart';
 import '../../routes/app_routes.dart';
+import '../../core/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_icon_widget.dart';
 import '../../widgets/custom_image_widget.dart';
@@ -245,6 +246,7 @@ class _SavedLandCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
 
     return InkWell(
       onTap: onTap,
@@ -368,7 +370,7 @@ class _SavedLandCard extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            'NPR ${land.leasePriceMonthly.toInt()}/mo',
+                            'NPR ${land.leasePriceMonthly.toInt()}${t.perMonthSuffix}',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,

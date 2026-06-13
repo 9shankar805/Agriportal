@@ -3,3 +3,4 @@ export 'package:flutter_svg/flutter_svg.dart';
 export 'package:go_router/go_router.dart';
 export '../widgets/custom_icon_widget.dart';
 export '../widgets/custom_image_widget.dart';
+export '../models/land_model.dart';

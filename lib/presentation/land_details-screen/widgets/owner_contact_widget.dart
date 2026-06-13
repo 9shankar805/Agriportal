@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/app_localizations.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_icon_widget.dart';
@@ -12,15 +13,18 @@ class OwnerContactWidget extends StatelessWidget {
   final LandModel land;
   // true once farmer's application is approved — reveals full contact
   final bool isContactRevealed;
+  final String ownerId;
 
   const OwnerContactWidget({
     required this.land,
     this.isContactRevealed = false,
+    required this.ownerId,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
     // Show first name only before approval; full name after
@@ -89,43 +93,46 @@ class OwnerContactWidget extends StatelessWidget {
 
           // ── Owner info ────────────────────────────────────────────────
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  displayName,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface,
+            child: GestureDetector(
+              onTap: () => context.push(AppRoutes.publicProfile, extra: ownerId),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayName,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Row(
-                  children: [
-                    CustomIconWidget(
-                      iconName: 'star',
-                      color: const Color(0xFFF9A825),
-                      size: 12,
-                    ),
-                    const SizedBox(width: 3),
-                    Flexible(
-                      child: Text(
-                        land.ownerRating > 0
-                            ? '${land.ownerRating.toStringAsFixed(1)} · Land Owner'
-                            : 'Land Owner',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          color: theme.colorScheme.outline,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      CustomIconWidget(
+                        iconName: 'star',
+                        color: const Color(0xFFF9A825),
+                        size: 12,
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 3),
+                      Flexible(
+                        child: Text(
+                          land.ownerRating > 0
+                              ? '${land.ownerRating.toStringAsFixed(1)} · ${t.landOwner}'
+                              : t.landOwner,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: theme.colorScheme.outline,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -148,7 +155,7 @@ class OwnerContactWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    isContactRevealed ? 'Message' : 'Chat',
+                    isContactRevealed ? t.message : t.chat,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,

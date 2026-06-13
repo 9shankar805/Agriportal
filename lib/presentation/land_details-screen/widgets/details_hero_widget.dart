@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/app_localizations.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_icon_widget.dart';
 import '../../../widgets/custom_image_widget.dart';
@@ -32,6 +33,21 @@ class _DetailHeroWidgetState extends State<DetailHeroWidget>
   late AnimationController _controller;
   late Animation<double> _fadeAnim;
   late Animation<double> _scaleAnim;
+  int _currentImageIndex = 0;
+  final PageController _pageController = PageController(initialPage: 0);
+
+  List<String> _getAllImages() {
+    final images = <String>[];
+    if (widget.land.imageUrl.isNotEmpty) {
+      images.add(widget.land.imageUrl);
+    }
+    for (final url in widget.land.imageUrls) {
+      if (!images.contains(url)) {
+        images.add(url);
+      }
+    }
+    return images.isNotEmpty ? images : ['https://images.pexels.com/photos/974314/pexels-photo-974314.jpeg'];
+  }
 
   @override
   void initState() {
@@ -54,13 +70,16 @@ class _DetailHeroWidgetState extends State<DetailHeroWidget>
   @override
   void dispose() {
     _controller.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final size = MediaQuery.of(context).size;
     final heroHeight = widget.isTablet ? 320.0 : size.height * 0.40;
+    final images = _getAllImages();
 
     return AnimatedBuilder(
       animation: _controller,
@@ -76,14 +95,43 @@ class _DetailHeroWidgetState extends State<DetailHeroWidget>
             // Full-bleed hero image
             Hero(
               tag: 'land-hero-${widget.land.id}',
-              child: CustomImageWidget(
-                imageUrl: widget.land.imageUrl,
-                width: double.infinity,
-                height: heroHeight,
-                fit: BoxFit.cover,
-                semanticLabel: widget.land.semanticLabel,
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: images.length,
+                onPageChanged: (index) => setState(() => _currentImageIndex = index),
+                itemBuilder: (context, index) {
+                  return CustomImageWidget(
+                    imageUrl: images[index],
+                    width: double.infinity,
+                    height: heroHeight,
+                    fit: BoxFit.cover,
+                    semanticLabel: widget.land.semanticLabel,
+                  );
+                },
               ),
             ),
+            if (images.length > 1)
+              Positioned(
+                bottom: 30,
+                left: 8,
+                right: 8,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(images.length, (index) {
+                    return Container(
+                      width: _currentImageIndex == index ? 18 : 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: _currentImageIndex == index
+                            ? Colors.white
+                            : Colors.white.withAlpha(128),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    );
+                  }),
+                ),
+              ),
             // Gradient overlay bottom
             Container(
               decoration: const BoxDecoration(
@@ -184,7 +232,7 @@ class _DetailHeroWidgetState extends State<DetailHeroWidget>
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      'View Photos',
+                      t.viewPhotos,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,

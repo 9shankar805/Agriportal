@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/app_localizations.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_icon_widget.dart';
 import '../../../widgets/custom_image_widget.dart';
@@ -11,31 +12,31 @@ class VirtualTourWidget extends StatelessWidget {
   final LandModel land;
   const VirtualTourWidget({required this.land, super.key});
 
+  List<String> _getAllImages() {
+    final images = <String>[];
+    if (land.imageUrl.isNotEmpty) {
+      images.add(land.imageUrl);
+    }
+    for (final url in land.imageUrls) {
+      if (!images.contains(url)) {
+        images.add(url);
+      }
+    }
+    if (images.isEmpty) {
+      return [
+        'https://images.pexels.com/photos/974314/pexels-photo-974314.jpeg',
+        'https://images.pexels.com/photos/2518861/pexels-photo-2518861.jpeg',
+        'https://images.pexels.com/photos/1581484/pexels-photo-1581484.jpeg',
+      ];
+    }
+    return images;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
-
-    // Use the land's own image as the primary, reliable Pexels URLs as fallbacks
-    final galleryImages = [
-      _GalleryImage(
-        url: land.imageUrl.isNotEmpty
-            ? land.imageUrl
-            : 'https://images.pexels.com/photos/974314/pexels-photo-974314.jpeg',
-        label: 'Main',
-      ),
-      _GalleryImage(
-        url: 'https://images.pexels.com/photos/974314/pexels-photo-974314.jpeg',
-        label: 'Field',
-      ),
-      _GalleryImage(
-        url: 'https://images.pexels.com/photos/2518861/pexels-photo-2518861.jpeg',
-        label: 'Water',
-      ),
-      _GalleryImage(
-        url: 'https://images.pexels.com/photos/1581484/pexels-photo-1581484.jpeg',
-        label: 'View',
-      ),
-    ];
+    final galleryImages = _getAllImages();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,7 +50,7 @@ class VirtualTourWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Land Gallery',
+                    t.landGallery,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -57,7 +58,7 @@ class VirtualTourWidget extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Explore every corner of this land.',
+                    t.exploreEveryCorner,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 11,
                       color: theme.colorScheme.outline,
@@ -106,11 +107,11 @@ class VirtualTourWidget extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: CustomImageWidget(
-                    imageUrl: galleryImages[index].url,
+                    imageUrl: galleryImages[index],
                     width: 90,
                     height: 90,
                     fit: BoxFit.cover,
-                    semanticLabel: galleryImages[index].label,
+                    semanticLabel: 'Land image ${index + 1}',
                   ),
                 ),
               );
@@ -120,10 +121,4 @@ class VirtualTourWidget extends StatelessWidget {
       ],
     );
   }
-}
-
-class _GalleryImage {
-  final String url;
-  final String label;
-  const _GalleryImage({required this.url, required this.label});
 }

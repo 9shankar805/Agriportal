@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/app_localizations.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_icon_widget.dart';
 import '../../land_listings_screen/land_listings_screen.dart';
@@ -12,38 +13,39 @@ class LandAmenitiesWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
     // 6 amenity items — 2-row × 3-col grid (locked from Image 2)
     final amenities = [
       _AmenityItem(
         icon: 'water',
-        label: 'Irrigation',
+        label: t.irrigation,
         available: land.hasIrrigation,
       ),
       _AmenityItem(
         icon: 'directions_car',
-        label: 'Road Access',
+        label: t.roadAccess,
         available: true,
       ),
       _AmenityItem(
         icon: 'bolt',
-        label: 'Electricity',
+        label: t.electricity,
         available: land.district != 'Mustang',
       ),
       _AmenityItem(
         icon: 'fence',
-        label: 'Fencing',
+        label: t.fencing,
         available: land.areaRopani < 15,
       ),
       _AmenityItem(
         icon: 'warehouse',
-        label: 'Storage',
+        label: t.storage,
         available: land.areaRopani > 8,
       ),
       _AmenityItem(
         icon: 'science',
-        label: 'Soil Test',
+        label: t.soilTest,
         available: land.isVerified,
       ),
     ];
@@ -52,7 +54,7 @@ class LandAmenitiesWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Land Features',
+          t.landFeatures,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 16,
             fontWeight: FontWeight.w700,

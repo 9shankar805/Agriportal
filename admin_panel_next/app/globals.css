@@ -12,14 +12,15 @@
 html, body {
   height: 100%;
   font-family: 'Inter', system-ui, sans-serif;
-  background: #f1f5f2;
-  color: #1a2d1c;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #0f172a;
 }
 
 /* Custom scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #c5e1a5; border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* Live pulse dot */
 @keyframes pulse {
@@ -30,10 +31,10 @@ html, body {
 
 /* Fade-up section animation */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.fade-up { animation: fadeUp 0.25s ease; }
+.fade-up { animation: fadeUp 0.4s ease-out; }
 
 /* Floating shapes on login */
 @keyframes float {
@@ -49,11 +50,11 @@ html, body {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.count-up { animation: countUp 0.4s ease; }
+.count-up { animation: countUp 0.5s ease-out; }
 
 /* Toast slide-in */
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(100%); }
   to   { opacity: 1; transform: translateX(0); }
 }
-.toast-in { animation: slideIn 0.3s ease; }
+.toast-in { animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1); }

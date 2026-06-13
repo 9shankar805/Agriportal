@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/app_export.dart';
 import '../../../theme/app_theme.dart';
-import '../../../widgets/custom_icon_widget.dart';
 import '../../../widgets/custom_image_widget.dart';
 
 class SplashHeroWidget extends StatefulWidget {
@@ -61,13 +60,11 @@ class _SplashHeroWidgetState extends State<SplashHeroWidget>
                 bottom: Radius.circular(28),
               ),
               child: CustomImageWidget(
-                imageUrl:
-                    'https://images.pexels.com/photos/974314/pexels-photo-974314.jpeg',
+                imageUrl: 'assets/images/homescreen_logo.jpeg',
                 width: double.infinity,
                 height: widget.height,
                 fit: BoxFit.cover,
-                semanticLabel:
-                    'Lush green agricultural terraced fields with mountain backdrop in Nepal',
+                semanticLabel: 'AgriPortal home screen logo',
               ),
             ),
             // Gradient overlay
@@ -96,8 +93,8 @@ class _SplashHeroWidgetState extends State<SplashHeroWidget>
               left: 20,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
+                  horizontal: 8,
+                  vertical: 6,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white.withAlpha(230),
@@ -106,25 +103,11 @@ class _SplashHeroWidgetState extends State<SplashHeroWidget>
                     BoxShadow(color: Colors.black.withAlpha(26), blurRadius: 8),
                   ],
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CustomIconWidget(
-                      iconName: 'eco',
-                      color: AppTheme.primary,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'AgriPortal',
-                      style: TextStyle(
-                        fontFamily: 'PlusJakartaSans',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.primary,
-                      ),
-                    ),
-                  ],
+                child: CustomImageWidget(
+                  imageUrl: 'assets/images/app_logo.jpeg',
+                  height: 32,
+                  fit: BoxFit.contain,
+                  semanticLabel: 'AgriPortal app logo',
                 ),
               ),
             ),

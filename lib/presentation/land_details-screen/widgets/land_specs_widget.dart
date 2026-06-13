@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/app_localizations.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_icon_widget.dart';
 import '../../land_listings_screen/land_listings_screen.dart';
@@ -12,23 +13,24 @@ class LandSpecsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final specs = [
       _SpecItem(
         icon: 'straighten',
         label: '${land.areaRopani} Ropani',
-        subtitle: 'Total Area',
+        subtitle: t.totalArea,
       ),
-      _SpecItem(icon: 'terrain', label: land.soilType, subtitle: 'Soil Type'),
+      _SpecItem(icon: 'terrain', label: land.soilType, subtitle: t.soilType),
       _SpecItem(
         icon: 'water_drop',
         label: land.waterSource,
-        subtitle: 'Water Source',
+        subtitle: t.waterSource,
       ),
       _SpecItem(
         icon: 'calendar_today',
-        label: 'Flexible',
-        subtitle: 'Lease Term',
+        label: t.flexible,
+        subtitle: t.leaseTerm,
       ),
     ];
 

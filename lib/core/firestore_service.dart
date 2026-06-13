@@ -45,6 +45,9 @@ class FirestoreService {
     return _lands.where('ownerId', isEqualTo: uid).snapshots();
   }
 
+  Stream<QuerySnapshot> userLandListingsStream(String userId) =>
+      _lands.where('ownerId', isEqualTo: userId).snapshots();
+
   Future<DocumentReference> addLand(Map<String, dynamic> data) async {
     final uid = _myUid;
     if (uid == null) throw Exception('Not authenticated');

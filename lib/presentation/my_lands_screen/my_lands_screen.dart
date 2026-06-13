@@ -1,11 +1,15 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
+import '../../models/nepal_location_model.dart';
+
 import '../../core/firestore_service.dart';
+import '../../core/app_localizations.dart';
 import '../../core/imgbb_service.dart';
 import '../../core/user_session.dart';
 import '../../core/wallet_service.dart';
@@ -36,6 +40,11 @@ class OwnerLand {
   String category;
   LandStatus status;
   List<LandApplicant> applicants;
+  // New rich fields
+  String description;
+  List<String> imageUrls;
+  List<String> landFeatures;
+  List<String> suggestedCrops;
 
   OwnerLand({
     required this.id,
@@ -53,6 +62,10 @@ class OwnerLand {
     required this.category,
     required this.status,
     required this.applicants,
+    this.description = '',
+    this.imageUrls = const [],
+    this.landFeatures = const [],
+    this.suggestedCrops = const [],
   });
 
   int get totalApplications => applicants.length;
@@ -89,6 +102,10 @@ class OwnerLand {
     String? category,
     LandStatus? status,
     List<LandApplicant>? applicants,
+    String? description,
+    List<String>? imageUrls,
+    List<String>? landFeatures,
+    List<String>? suggestedCrops,
   }) {
     return OwnerLand(
       id: id,
@@ -106,6 +123,10 @@ class OwnerLand {
       category: category ?? this.category,
       status: status ?? this.status,
       applicants: applicants ?? this.applicants,
+      description: description ?? this.description,
+      imageUrls: imageUrls ?? this.imageUrls,
+      landFeatures: landFeatures ?? this.landFeatures,
+      suggestedCrops: suggestedCrops ?? this.suggestedCrops,
     );
   }
 }
@@ -193,6 +214,10 @@ class _MyLandsScreenState extends State<MyLandsScreen>
             category:         d['category']        as String? ?? 'Other',
             status:           landStatus,
             applicants:       [],
+            description:      d['description']    as String? ?? '',
+            imageUrls:        List<String>.from(d['imageUrls']      as List? ?? []),
+            landFeatures:     List<String>.from(d['landFeatures']   as List? ?? []),
+            suggestedCrops:   List<String>.from(d['suggestedCrops'] as List? ?? []),
           );
         }).toList();
         setState(() {
@@ -248,6 +273,10 @@ class _MyLandsScreenState extends State<MyLandsScreen>
       'category':       land.category,
       'status':         'pending',
       'ownerName':      UserSession.instance.displayName,
+      'description':    land.description,
+      'imageUrls':      land.imageUrls,
+      'landFeatures':   land.landFeatures,
+      'suggestedCrops': land.suggestedCrops,
     }).then((_) {}).catchError((_) {});
   }
 
@@ -263,10 +292,15 @@ class _MyLandsScreenState extends State<MyLandsScreen>
       'municipality':  updated.municipality,
       'areaBigha':     updated.areaRopani,
       'pricePerBigha': updated.leasePriceMonthly,
+      'imageUrl':      updated.imageUrl,
       'soilType':      updated.soilType,
       'waterSource':   updated.waterSource,
       'hasIrrigation': updated.hasIrrigation,
       'category':      updated.category,
+      'description':   updated.description,
+      'imageUrls':     updated.imageUrls,
+      'landFeatures':  updated.landFeatures,
+      'suggestedCrops': updated.suggestedCrops,
     }).catchError((_) {});
   }
 
@@ -518,6 +552,7 @@ class _MyLandsScreenState extends State<MyLandsScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -525,7 +560,7 @@ class _MyLandsScreenState extends State<MyLandsScreen>
             ? const Center(child: CircularProgressIndicator())
             : NestedScrollView(
                 headerSliverBuilder: (ctx, _) => [
-                  SliverToBoxAdapter(child: _buildHeader(theme)),
+                  SliverToBoxAdapter(child: _buildHeader(theme, t)),
                   SliverToBoxAdapter(child: _buildStatsRow(theme)),
                   SliverPersistentHeader(
                     pinned: true,
@@ -546,10 +581,10 @@ class _MyLandsScreenState extends State<MyLandsScreen>
                           fontSize: 13,
                         ),
                         tabs: [
-                          Tab(text: 'All (${_allLands.length})'),
-                          Tab(text: 'Active (${_activeLands.length})'),
-                          Tab(text: 'Pending (${_pendingLands.length})'),
-                          Tab(text: 'Inactive (${_inactiveLands.length})'),
+                          Tab(text: '${t.all} (${_allLands.length})'),
+                          Tab(text: '${t.active} (${_activeLands.length})'),
+                          Tab(text: '${t.pending} (${_pendingLands.length})'),
+                          Tab(text: '${t.inactive} (${_inactiveLands.length})'),
                         ],
                       ),
                       backgroundColor: theme.colorScheme.surface,
@@ -610,7 +645,7 @@ class _MyLandsScreenState extends State<MyLandsScreen>
         elevation: 3,
         icon: CustomIconWidget(iconName: 'add', color: Colors.white, size: 20),
         label: Text(
-          'List Land',
+          t.listLand,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -621,13 +656,13 @@ class _MyLandsScreenState extends State<MyLandsScreen>
   }
 
   // ── Advanced LandOwner Top Bar ─────────────────────────────────────────────
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(ThemeData theme, AppLocalizations t) {
     final user = UserSession.instance.firebaseUser;
     final name = user?.displayName ?? UserSession.instance.displayName;
     final photoUrl = user?.photoURL ?? '';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'L';
     final hour = DateTime.now().hour;
-    final greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    final greeting = hour < 12 ? t.goodMorning : hour < 17 ? t.goodAfternoon : t.goodEvening;
 
     return Container(
       decoration: const BoxDecoration(
@@ -725,7 +760,7 @@ class _MyLandsScreenState extends State<MyLandsScreen>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                isVerified ? 'KYC Verified' : 'KYC Pending',
+                                isVerified ? t.kycVerified : t.kycPending,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
@@ -1089,6 +1124,7 @@ class _LandOwnerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     final isInactive =
         land.status == LandStatus.inactive || land.status == LandStatus.rejected;
 
@@ -1229,7 +1265,7 @@ class _LandOwnerCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     _InfoChip(
                       icon: 'payments',
-                      label: 'NPR ${land.leasePriceMonthly.toStringAsFixed(0)}/mo',
+                      label: 'NPR ${land.leasePriceMonthly.toStringAsFixed(0)}${t.perMonthSuffix}',
                       color: AppTheme.info,
                     ),
                     const Spacer(),
@@ -2008,9 +2044,9 @@ class _LandFormSheetState extends State<_LandFormSheet> {
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _titleCtrl;
-  late TextEditingController _municipalityCtrl;
   late TextEditingController _areaCtrl;
   late TextEditingController _priceCtrl;
+  late TextEditingController _descriptionCtrl;
 
   // Image state — picked file or existing URL
   File? _pickedImageFile;
@@ -2018,20 +2054,31 @@ class _LandFormSheetState extends State<_LandFormSheet> {
   bool _isUploadingImage = false;
   double _uploadProgress = 0.0;
 
-  String _province = 'Bagmati';
-  String _district = 'Chitwan';
+  Province? _selectedProvince;
+  District? _selectedDistrict;
+  Municipality? _selectedMunicipality;
   String _soilType = 'Alluvial';
   String _waterSource = 'River';
   String _category = 'Paddy';
   bool _hasIrrigation = false;
   bool _isSaving = false;
 
-  static const _provinces = [
-    'Koshi', 'Madhesh', 'Bagmati', 'Gandaki', 'Lumbini', 'Karnali', 'Sudurpashchim',
+  // New rich fields
+  List<String> _imageUrls = [];
+  List<bool> _uploadingSlots = [false, false, false, false, false];
+  List<String> _selectedFeatures = [];
+  List<String> _selectedCrops = [];
+
+  NepalLocationResponse? _locationData;
+  bool _isLoadingLocation = true;
+
+  static const _allFeatures = [
+    'Road Access', 'Electricity', 'Irrigation',
+    'Fencing', 'Storage', 'Soil Test',
   ];
-  static const _districts = [
-    'Chitwan', 'Kavre', 'Mustang', 'Rasuwa', 'Ilam', 'Nawalpur',
-    'Rupandehi', 'Solukhumbu', 'Kathmandu', 'Lalitpur', 'Bhaktapur',
+  static const _allCrops = [
+    'Rice', 'Wheat', 'Maize', 'Vegetables', 'Tea',
+    'Orchard', 'Pasture', 'Mixed',
   ];
   static const _soilTypes = [
     'Alluvial', 'Loamy', 'Sandy Loam', 'Clay', 'Clay Loam', 'Acidic Loam',
@@ -2046,66 +2093,135 @@ class _LandFormSheetState extends State<_LandFormSheet> {
   @override
   void initState() {
     super.initState();
+    _loadLocationData();
+    LanguageController.instance.addListener(_onLanguageChanged);
+    
     final l = widget.existingLand;
     _titleCtrl = TextEditingController(text: l?.title ?? '');
-    _municipalityCtrl = TextEditingController(text: l?.municipality ?? '');
     _areaCtrl = TextEditingController(
       text: l != null ? l.areaRopani.toString() : '',
     );
     _priceCtrl = TextEditingController(
       text: l != null ? l.leasePriceMonthly.toStringAsFixed(0) : '',
     );
+    _descriptionCtrl = TextEditingController(text: l?.description ?? '');
     if (l != null) {
       _uploadedImageUrl = l.imageUrl;
-      _province = l.province;
-      _district = l.district;
       _soilType = l.soilType;
       _waterSource = l.waterSource;
       _category = l.category;
       _hasIrrigation = l.hasIrrigation;
+      _imageUrls = List.from(l.imageUrls);
+      _selectedFeatures = List.from(l.landFeatures);
+      _selectedCrops = List.from(l.suggestedCrops);
+    }
+  }
+
+  void _onLanguageChanged() {
+    setState(() {});
+  }
+
+  Future<void> _loadLocationData() async {
+    try {
+      final String response = await rootBundle.loadString('assets/nepal_location.json');
+      final data = json.decode(response);
+      setState(() {
+        _locationData = NepalLocationResponse.fromJson(data);
+        _isLoadingLocation = false;
+        
+        final l = widget.existingLand;
+        if (_locationData != null && l != null) {
+          // Find existing province by name
+          _selectedProvince = _locationData!.provinceList.firstWhere(
+            (p) => p.nameEn.toLowerCase() == l.province.toLowerCase(),
+            orElse: () => _locationData!.provinceList.first,
+          );
+          _selectedDistrict = _selectedProvince!.districtList.firstWhere(
+            (d) => d.nameEn.toLowerCase() == l.district.toLowerCase(),
+            orElse: () => _selectedProvince!.districtList.first,
+          );
+          // Try to find municipality
+          try {
+            _selectedMunicipality = _selectedDistrict!.municipalityList.firstWhere(
+              (m) => m.nameEn.toLowerCase() == l.municipality.toLowerCase(),
+            );
+          } catch (e) {
+            // If not found, don't set
+          }
+        } else if (_locationData != null && _locationData!.provinceList.isNotEmpty) {
+          // Default
+          _selectedProvince = _locationData!.provinceList.first;
+          if (_selectedProvince!.districtList.isNotEmpty) {
+            _selectedDistrict = _selectedProvince!.districtList.first;
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('Error loading location data: $e');
+      setState(() {
+        _isLoadingLocation = false;
+      });
     }
   }
 
   @override
   void dispose() {
+    LanguageController.instance.removeListener(_onLanguageChanged);
     _titleCtrl.dispose();
-    _municipalityCtrl.dispose();
     _areaCtrl.dispose();
     _priceCtrl.dispose();
+    _descriptionCtrl.dispose();
     super.dispose();
   }
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
-    if (_isUploadingImage) {
-      _showSnack('Please wait for image upload to finish');
+    if (_uploadingSlots.any((u) => u)) {
+      final t = AppLocalizations.of(context);
+      _showSnack(t.pleaseWaitImages);
       return;
     }
     setState(() => _isSaving = true);
 
-    // Use uploaded URL, or existing URL, or fallback placeholder
-    final finalImageUrl = _uploadedImageUrl.isNotEmpty
-        ? _uploadedImageUrl
+    // Primary image: first in gallery list, or single uploaded, or fallback
+    final allUrls = [
+      ..._imageUrls,
+      if (_uploadedImageUrl.isNotEmpty) _uploadedImageUrl,
+    ].toSet().toList();
+
+    final finalImageUrl = allUrls.isNotEmpty
+        ? allUrls.first
         : 'https://images.pexels.com/photos/974314/pexels-photo-974314.jpeg';
+
+    // Merge irrigation toggle into features list
+    final features = List<String>.from(_selectedFeatures);
+    if (_hasIrrigation && !features.contains('Irrigation')) {
+      features.add('Irrigation');
+    } else if (!_hasIrrigation) {
+      features.remove('Irrigation');
+    }
 
     final land = OwnerLand(
       id: widget.existingLand?.id ??
           'land_${DateTime.now().millisecondsSinceEpoch}',
       title: _titleCtrl.text.trim(),
-      district: _district,
-      province: _province,
-      municipality: _municipalityCtrl.text.trim(),
+      district: _selectedDistrict?.nameEn ?? '',
+      province: _selectedProvince?.nameEn ?? '',
+      municipality: _selectedMunicipality?.nameEn ?? '',
       areaRopani: double.parse(_areaCtrl.text.trim()),
       leasePriceMonthly: double.parse(_priceCtrl.text.trim()),
       imageUrl: finalImageUrl,
-      semanticLabel:
-          '${_titleCtrl.text.trim()} agricultural land in $_district Nepal',
+      semanticLabel: '${_titleCtrl.text.trim()} agricultural land in ${_selectedDistrict?.nameEn ?? ''} Nepal',
       soilType: _soilType,
       waterSource: _waterSource,
-      hasIrrigation: _hasIrrigation,
+      hasIrrigation: features.contains('Irrigation'),
       category: _category,
       status: widget.existingLand?.status ?? LandStatus.pending,
       applicants: widget.existingLand?.applicants ?? [],
+      description: _descriptionCtrl.text.trim(),
+      imageUrls: allUrls,
+      landFeatures: features,
+      suggestedCrops: _selectedCrops,
     );
 
     Future.microtask(() {
@@ -2154,6 +2270,8 @@ class _LandFormSheetState extends State<_LandFormSheet> {
         setState(() {
           _uploadedImageUrl = url;
           _isUploadingImage = false;
+          // Also add to gallery list if not already there
+          if (!_imageUrls.contains(url)) _imageUrls.insert(0, url);
         });
       }
     } catch (e) {
@@ -2162,6 +2280,48 @@ class _LandFormSheetState extends State<_LandFormSheet> {
           _isUploadingImage = false;
           _pickedImageFile = null;
         });
+        _showSnack('Upload failed: $e');
+      }
+    }
+  }
+
+  /// Pick and upload one additional gallery image (slot index 0-4)
+  Future<void> _pickGalleryImage() async {
+    if (_imageUrls.length >= 5) {
+      _showSnack('Maximum 5 images allowed');
+      return;
+    }
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 1200,
+    );
+    if (picked == null) return;
+    final slotIndex = _imageUrls.length; // append
+    final newSlots = List<bool>.from(_uploadingSlots);
+    newSlots[slotIndex] = true;
+    setState(() => _uploadingSlots = newSlots);
+    try {
+      final url = await ImgBBService.instance.uploadImage(
+        File(picked.path),
+        name: 'land_gallery_${DateTime.now().millisecondsSinceEpoch}',
+      );
+      if (mounted) {
+        setState(() {
+          _imageUrls.add(url);
+          final done = List<bool>.from(_uploadingSlots);
+          done[slotIndex] = false;
+          _uploadingSlots = done;
+          // Set primary image if first
+          if (_uploadedImageUrl.isEmpty) _uploadedImageUrl = url;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        final done = List<bool>.from(_uploadingSlots);
+        done[slotIndex] = false;
+        setState(() => _uploadingSlots = done);
         _showSnack('Upload failed: $e');
       }
     }
@@ -2321,9 +2481,11 @@ class _LandFormSheetState extends State<_LandFormSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
+    final isNepali = LanguageController.instance.isNepali;
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(
@@ -2371,7 +2533,7 @@ class _LandFormSheetState extends State<_LandFormSheet> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    _isEditing ? 'Edit Listing' : 'List Your Land',
+                    _isEditing ? t.editListing : t.listYourLand,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -2382,12 +2544,12 @@ class _LandFormSheetState extends State<_LandFormSheet> {
               const SizedBox(height: 20),
 
               // Land Title
-              _FieldLabel('Land Title *'),
+              _FieldLabel(t.landTitle),
               TextFormField(
                 controller: _titleCtrl,
                 style: GoogleFonts.plusJakartaSans(fontSize: 14),
                 decoration: InputDecoration(
-                  hintText: 'e.g. Fertile Paddy Fields — Chitwan',
+                  hintText: t.landTitleHint,
                   prefixIcon: Padding(
                     padding: const EdgeInsets.only(left: 12, right: 8),
                     child: CustomIconWidget(
@@ -2402,7 +2564,7 @@ class _LandFormSheetState extends State<_LandFormSheet> {
                   ),
                 ),
                 validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Title is required' : null,
+                    (v == null || v.trim().isEmpty) ? t.titleRequired : null,
               ),
               const SizedBox(height: 14),
 
@@ -2413,11 +2575,19 @@ class _LandFormSheetState extends State<_LandFormSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _FieldLabel('Province *'),
-                        _DropdownField<String>(
-                          value: _province,
-                          items: _provinces,
-                          onChanged: (v) => setState(() => _province = v!),
+                        _FieldLabel(t.province),
+                        _DropdownField<Province>(
+                          value: _selectedProvince,
+                          items: _locationData?.provinceList ?? [],
+                          itemLabel: (province) => 
+                              isNepali && (province.nameNp?.isNotEmpty ?? false)
+                              ? province.nameNp! 
+                              : province.nameEn,
+                          onChanged: (v) => setState(() {
+                            _selectedProvince = v;
+                            _selectedDistrict = null;
+                            _selectedMunicipality = null;
+                          }),
                         ),
                       ],
                     ),
@@ -2427,11 +2597,18 @@ class _LandFormSheetState extends State<_LandFormSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _FieldLabel('District *'),
-                        _DropdownField<String>(
-                          value: _district,
-                          items: _districts,
-                          onChanged: (v) => setState(() => _district = v!),
+                        _FieldLabel(t.district),
+                        _DropdownField<District>(
+                          value: _selectedDistrict,
+                          items: _selectedProvince?.districtList ?? [],
+                          itemLabel: (district) => 
+                              isNepali && (district.nameNp?.isNotEmpty ?? false)
+                              ? district.nameNp! 
+                              : district.nameEn,
+                          onChanged: (v) => setState(() {
+                            _selectedDistrict = v;
+                            _selectedMunicipality = null;
+                          }),
                         ),
                       ],
                     ),
@@ -2441,13 +2618,15 @@ class _LandFormSheetState extends State<_LandFormSheet> {
               const SizedBox(height: 14),
 
               // Municipality
-              _FieldLabel('Municipality *'),
-              TextFormField(
-                controller: _municipalityCtrl,
-                style: GoogleFonts.plusJakartaSans(fontSize: 14),
-                decoration: const InputDecoration(hintText: 'e.g. Bharatpur'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Required' : null,
+              _FieldLabel(t.municipality),
+              _DropdownField<Municipality>(
+                value: _selectedMunicipality,
+                items: _selectedDistrict?.municipalityList ?? [],
+                itemLabel: (municipality) => 
+                    isNepali && (municipality.nameNp?.isNotEmpty ?? false)
+                    ? municipality.nameNp! 
+                    : municipality.nameEn,
+                onChanged: (v) => setState(() => _selectedMunicipality = v),
               ),
               const SizedBox(height: 14),
 
@@ -2723,14 +2902,16 @@ class _FieldLabel extends StatelessWidget {
 }
 
 class _DropdownField<T> extends StatelessWidget {
-  final T value;
+  final T? value;
   final List<T> items;
   final ValueChanged<T?> onChanged;
+  final String Function(T)? itemLabel;
 
   const _DropdownField({
     required this.value,
     required this.items,
     required this.onChanged,
+    this.itemLabel,
   });
 
   @override
@@ -2751,7 +2932,7 @@ class _DropdownField<T> extends StatelessWidget {
             (item) => DropdownMenuItem<T>(
               value: item,
               child: Text(
-                item.toString(),
+                itemLabel != null ? itemLabel!(item) : item.toString(),
                 style: GoogleFonts.plusJakartaSans(fontSize: 13),
               ),
             ),

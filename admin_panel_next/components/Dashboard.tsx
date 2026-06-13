@@ -11,9 +11,10 @@ import MessagesSection from './sections/MessagesSection';
 import AnalyticsSection from './sections/AnalyticsSection';
 import SupportSection from './sections/SupportSection';
 import SettingsSection from './sections/SettingsSection';
+import WalletSection from './sections/WalletSection';
 import { useAdmin } from '@/context/AdminContext';
 
-type SectionId = 'overview'|'users'|'kyc'|'lands'|'applications'|'messages'|'analytics'|'support'|'settings';
+type SectionId = 'overview'|'users'|'kyc'|'lands'|'applications'|'messages'|'analytics'|'wallet'|'support'|'settings';
 
 interface DashboardProps {
   adminName: string;
@@ -21,13 +22,16 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ adminName, onLogout }: DashboardProps) {
-  const { loadAllFirebase } = useAdmin();
+  const { loadAllFirebase, firebaseReady, authUser } = useAdmin();
   const [section,     setSection]     = useState<SectionId>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Load Firebase data once auth user is confirmed
   useEffect(() => {
-    loadAllFirebase();
-  }, [loadAllFirebase]);
+    if (firebaseReady && authUser) {
+      loadAllFirebase();
+    }
+  }, [loadAllFirebase, firebaseReady, authUser]);
 
   const nav = (id: string) => {
     setSection(id as SectionId);
@@ -48,6 +52,7 @@ export default function Dashboard({ adminName, onLogout }: DashboardProps) {
     applications: <ApplicationsSection />,
     messages:     <MessagesSection />,
     analytics:    <AnalyticsSection />,
+    wallet:       <WalletSection />,
     support:      <SupportSection />,
     settings:     <SettingsSection />,
   };

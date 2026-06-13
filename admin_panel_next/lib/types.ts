@@ -3,6 +3,7 @@ export interface AppUser {
   name: string;
   email: string;
   phone: string;
+  photoUrl?: string | null;
   role: 'farmer' | 'landOwner';
   kycStatus: 'pending' | 'verified' | 'rejected';
   kycDocuments?: { citizenshipFront?: string; citizenshipBack?: string; selfie?: string } | null;
@@ -67,6 +68,24 @@ export interface SupportMessage {
   message: string;
   status: 'open' | 'resolved';
   uid?: string | null;
+  createdAt: string;
+  ts: number;
+}
+
+export interface WalletEntry {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userPhoto?: string | null;
+  balance: number;
+  transactions: WalletTransaction[];
+}
+
+export interface WalletTransaction {
+  id: string;
+  amount: number;
+  type: 'credit' | 'debit';
+  description: string;
   createdAt: string;
   ts: number;
 }

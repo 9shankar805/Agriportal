@@ -2,13 +2,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sizer/sizer.dart';
 
-import '../../core/app_export.dart';
+import '../../core/app_localizations.dart';
 import '../../core/firebase_auth_service.dart';
 import '../../core/user_session.dart';
 import '../../routes/app_routes.dart';
-import './widgets/auth_buttons_widget.dart';
-import './widgets/role_selector_widget.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/custom_icon_widget.dart';
 import './widgets/splash_hero_widget.dart';
 
 enum UserRole { farmer, landOwner }
@@ -21,39 +22,45 @@ class SignUpLoginScreen extends StatefulWidget {
 }
 
 class _SignUpLoginScreenState extends State<SignUpLoginScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   UserRole _selectedRole = UserRole.farmer;
   bool _isLoading = false;
-  late AnimationController _enterController;
+
+  late AnimationController _fadeCtrl;
+  late AnimationController _slideCtrl;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
 
   @override
   void initState() {
     super.initState();
-    _enterController = AnimationController(
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _slideCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _fadeAnim = CurvedAnimation(
-      parent: _enterController,
-      curve: Curves.easeOutCubic,
-    );
-    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
-        .animate(
-          CurvedAnimation(parent: _enterController, curve: Curves.easeOutCubic),
-        );
-    _enterController.forward();
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOutCubic));
+
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) {
+        _fadeCtrl.forward();
+        _slideCtrl.forward();
+      }
+    });
   }
 
   @override
   void dispose() {
-    _enterController.dispose();
+    _fadeCtrl.dispose();
+    _slideCtrl.dispose();
     super.dispose();
-  }
-
-  void _onRoleChanged(UserRole role) {
-    setState(() => _selectedRole = role);
   }
 
   void _setRole() {
@@ -74,23 +81,17 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
     }
   }
 
-  void _onSkip() {
-    context.go(AppRoutes.landListings);
-  }
-
   Future<void> _onGoogleSignIn() async {
     setState(() => _isLoading = true);
     try {
       final user = await FirebaseAuthService.instance.signInWithGoogle();
       if (user != null) {
-        // Update user role in Firestore
         await FirebaseAuthService.instance.updateUserRole(
           user.uid,
           _selectedRole == UserRole.landOwner ? 'landOwner' : 'farmer',
         );
         _navigateAfterAuth();
       } else {
-        // User cancelled
         if (mounted) setState(() => _isLoading = false);
       }
     } catch (e) {
@@ -102,20 +103,6 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
   }
 
   void _onPhoneLogin() {
-    _showPhoneBottomSheet();
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showPhoneBottomSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -129,61 +116,78 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isTablet = size.width >= 600;
-    final theme = Theme.of(context);
+  void _onSkip() => context.go(AppRoutes.landListings);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            isTablet
-                ? _buildTabletLayout(theme)
-                : _buildPhoneLayout(theme, size),
-            // Skip button — always visible top-right
-            Positioned(
-              top: 8,
-              right: 16,
-              child: TextButton(
-                onPressed: _isLoading ? null : _onSkip,
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                ),
-                child: Text(
-                  'Skip',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.outline,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message,
+            style: GoogleFonts.plusJakartaSans(fontSize: 13)),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
 
-  Widget _buildPhoneLayout(ThemeData theme, Size size) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return Scaffold(
+      backgroundColor: const Color(0xFFF0F4ED),
+      body: Stack(
         children: [
-          SplashHeroWidget(height: size.height * 0.36),
-          FadeTransition(
-            opacity: _fadeAnim,
-            child: SlideTransition(
-              position: _slideAnim,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                child: _buildContent(theme),
+          // ── Full-page scrollable content ──────────────────────────────
+          SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: Column(
+              children: [
+                // ── Hero image ──────────────────────────────────────────
+                SplashHeroWidget(height: 44.h),
+
+                // ── Bottom card ─────────────────────────────────────────
+                FadeTransition(
+                  opacity: _fadeAnim,
+                  child: SlideTransition(
+                    position: _slideAnim,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF0F4ED),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(5.w, 3.h, 5.w, 4.h),
+                        child: _buildContent(context, t),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Skip button — top right ──────────────────────────────────
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            right: 16,
+            child: TextButton(
+              onPressed: _isLoading ? null : _onSkip,
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white.withAlpha(200),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              ),
+              child: Text(
+                t.browse,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primary,
+                ),
               ),
             ),
           ),
@@ -192,121 +196,374 @@ class _SignUpLoginScreenState extends State<SignUpLoginScreen>
     );
   }
 
-  Widget _buildTabletLayout(ThemeData theme) {
-    return Center(
-      child: SizedBox(
-        width: 480,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 32),
-          child: Column(
-            children: [
-              const SplashHeroWidget(height: 220),
-              const SizedBox(height: 24),
-              Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(20),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(32),
-                child: _buildContent(theme),
-              ),
-            ],
+  Widget _buildContent(BuildContext context, AppLocalizations t) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── Headline ──────────────────────────────────────────────────────
+        Text(
+          t.findYourPerfectFarmland,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF1A2E1A),
+            height: 1.18,
+            letterSpacing: -0.3,
           ),
         ),
+        SizedBox(height: 1.h),
+        Text(
+          t.loginSubtitle,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            color: theme.colorScheme.outline,
+            height: 1.55,
+          ),
+        ),
+        SizedBox(height: 2.5.h),
+
+        // ── Role selector ────────────────────────────────────────────────
+        Text(
+          t.iWantTo,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.outline,
+            letterSpacing: 0.4,
+          ),
+        ),
+        SizedBox(height: 1.2.h),
+        _RolePicker(
+          selected: _selectedRole,
+          onChanged: (r) => setState(() => _selectedRole = r),
+        ),
+        SizedBox(height: 3.h),
+
+        // ── Auth buttons ─────────────────────────────────────────────────
+        _buildGoogleButton(theme, t),
+        SizedBox(height: 1.4.h),
+        _buildOrDivider(theme, t),
+        SizedBox(height: 1.4.h),
+        _buildPhoneButton(theme, t),
+
+        SizedBox(height: 2.5.h),
+
+        // ── Legal ────────────────────────────────────────────────────────
+                  Center(
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 2,
+                      children: [
+                        Text(
+                          t.termsPrefix,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => context.push(AppRoutes.terms),
+                          child: Text(
+                            t.terms,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          t.and,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => context.push(AppRoutes.privacy),
+                          child: Text(
+                            t.privacyPolicy,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+      ],
+    );
+  }
+
+  Widget _buildGoogleButton(ThemeData theme, AppLocalizations t) {
+    return SizedBox(
+      height: 54,
+      child: OutlinedButton(
+        onPressed: _isLoading ? null : _onGoogleSignIn,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          side: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+            width: 1.5,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          elevation: 0,
+          shadowColor: Colors.transparent,
+        ),
+        child: _isLoading
+            ? SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: AppTheme.primary,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/google.png',
+                    height: 22,
+                    width: 22,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    t.continueWithGoogle,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1A2E1A),
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
 
-  Widget _buildContent(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildOrDivider(ThemeData theme, AppLocalizations t) {
+    return Row(
       children: [
-        Text(
-          'Find Your Perfect\nFarmland',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurface,
-            height: 1.2,
+        Expanded(
+          child: Container(
+            height: 1,
+            color: theme.colorScheme.outlineVariant,
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Connect with verified landowners and start farming on your ideal plot.',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: theme.colorScheme.outline,
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'I am a...',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.outline,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 12),
-        RoleSelectorWidget(
-          selectedRole: _selectedRole,
-          onRoleChanged: _onRoleChanged,
-        ),
-        const SizedBox(height: 28),
-        AuthButtonsWidget(
-          isLoading: _isLoading,
-          onGoogleSignIn: _onGoogleSignIn,
-          onPhoneLogin: _onPhoneLogin,
-        ),
-        const SizedBox(height: 20),
-        Center(
-          child: Text.rich(
-            TextSpan(
-              text: 'By continuing, you agree to our ',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                color: theme.colorScheme.outline,
-              ),
-              children: [
-                TextSpan(
-                  text: 'Terms of Service',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const TextSpan(text: ' & '),
-                TextSpan(
-                  text: 'Privacy Policy',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Text(
+            t.orDivider,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              color: theme.colorScheme.outline,
             ),
-            textAlign: TextAlign.center,
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: theme.colorScheme.outlineVariant,
           ),
         ),
       ],
     );
   }
+
+  Widget _buildPhoneButton(ThemeData theme, AppLocalizations t) {
+    return SizedBox(
+      height: 54,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _onPhoneLogin,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CustomIconWidget(
+              iconName: 'smartphone',
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              t.continueWithPhone,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Phone OTP Sheet — now uses real Firebase Phone Auth
+// Role picker — horizontal pill toggle
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _RolePicker extends StatelessWidget {
+  final UserRole selected;
+  final ValueChanged<UserRole> onChanged;
+
+  const _RolePicker({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          width: 1,
+        ),
+      ),
+      padding: const EdgeInsets.all(6),
+      child: Row(
+        children: [
+          _RoleTile(
+            role: UserRole.farmer,
+            icon: 'agriculture',
+            title: t.roleFarmer,
+            subtitle: t.roleFarmerSubtitle,
+            selected: selected == UserRole.farmer,
+            onTap: () => onChanged(UserRole.farmer),
+          ),
+          const SizedBox(width: 6),
+          _RoleTile(
+            role: UserRole.landOwner,
+            icon: 'real_estate_agent',
+            title: t.roleLandOwner,
+            subtitle: t.roleLandOwnerSubtitle,
+            selected: selected == UserRole.landOwner,
+            onTap: () => onChanged(UserRole.landOwner),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoleTile extends StatelessWidget {
+  final UserRole role;
+  final String icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _RoleTile({
+    required this.role,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          color: selected ? AppTheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(11),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primary.withAlpha(60),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(11),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? Colors.white.withAlpha(40)
+                          : AppTheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Center(
+                      child: CustomIconWidget(
+                        iconName: icon,
+                        color: selected ? Colors.white : AppTheme.primary,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: selected ? Colors.white : const Color(0xFF1A2E1A),
+                          ),
+                        ),
+                        Text(
+                          subtitle,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            color: selected
+                                ? Colors.white.withAlpha(200)
+                                : Theme.of(context).colorScheme.outline,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phone OTP bottom sheet
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _PhoneOtpSheet extends StatefulWidget {
@@ -318,74 +575,76 @@ class _PhoneOtpSheet extends StatefulWidget {
 }
 
 class _PhoneOtpSheetState extends State<_PhoneOtpSheet> {
-  final _phoneController = TextEditingController();
-  final _otpController = TextEditingController();
-  bool _otpSent = false;
-  bool _isLoading = false;
+  final _phoneCtrl = TextEditingController();
+  final _otpCtrl   = TextEditingController();
+  bool _otpSent   = false;
+  bool _loading   = false;
   String? _verificationId;
 
   @override
   void dispose() {
-    _phoneController.dispose();
-    _otpController.dispose();
+    _phoneCtrl.dispose();
+    _otpCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _sendOtp() async {
-    if (_phoneController.text.length < 10) return;
-    setState(() => _isLoading = true);
+    if (_phoneCtrl.text.trim().length < 7) return;
+    setState(() => _loading = true);
 
     await FirebaseAuthService.instance.sendOtp(
-      phoneNumber: '+977${_phoneController.text.trim()}',
-      onAutoVerified: (PhoneAuthCredential credential) async {
-        // Auto-verified (usually on Android)
-        final result =
-            await FirebaseAuth.instance.signInWithCredential(credential);
-        if (result.user != null && mounted) {
-          setState(() => _isLoading = false);
+      phoneNumber: '+977${_phoneCtrl.text.trim()}',
+      onAutoVerified: (PhoneAuthCredential cred) async {
+        final r = await FirebaseAuth.instance.signInWithCredential(cred);
+        if (r.user != null && mounted) {
+          setState(() => _loading = false);
           widget.onConfirm();
         }
       },
       onVerificationFailed: (FirebaseAuthException e) {
         if (mounted) {
-          setState(() => _isLoading = false);
+          setState(() => _loading = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed: ${e.message}')),
+            SnackBar(
+              content: Text('Error: ${e.message}',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 13)),
+              backgroundColor: AppTheme.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+            ),
           );
         }
       },
-      onCodeSent: (String verificationId, int? resendToken) {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _otpSent = true;
-            _verificationId = verificationId;
-          });
-        }
+      onCodeSent: (String vId, int? _) {
+        if (mounted) setState(() { _loading = false; _otpSent = true; _verificationId = vId; });
       },
-      onCodeAutoRetrievalTimeout: (String verificationId) {
-        _verificationId = verificationId;
-      },
+      onCodeAutoRetrievalTimeout: (String vId) { _verificationId = vId; },
     );
   }
 
   Future<void> _verifyOtp() async {
-    if (_verificationId == null || _otpController.text.length != 6) return;
-    setState(() => _isLoading = true);
+    if (_verificationId == null || _otpCtrl.text.length != 6) return;
+    setState(() => _loading = true);
     try {
       final user = await FirebaseAuthService.instance.verifyOtp(
         verificationId: _verificationId!,
-        smsCode: _otpController.text.trim(),
+        smsCode: _otpCtrl.text.trim(),
       );
       if (user != null && mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _loading = false);
         widget.onConfirm();
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+          SnackBar(
+            content: Text(e.toString(),
+                style: GoogleFonts.plusJakartaSans(fontSize: 13)),
+            backgroundColor: AppTheme.error,
+          ),
         );
       }
     }
@@ -397,105 +656,230 @@ class _PhoneOtpSheetState extends State<_PhoneOtpSheet> {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(
-        24,
-        20,
-        24,
+        24, 16, 24,
         MediaQuery.of(context).viewInsets.bottom + 32,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Handle
           Center(
             child: Container(
-              width: 40,
-              height: 4,
+              width: 36, height: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.outline.withAlpha(77),
+                color: theme.colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
           const SizedBox(height: 20),
+
+          // Icon
+          Center(
+            child: Container(
+              width: 56, height: 56,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Center(
+                child: CustomIconWidget(
+                  iconName: _otpSent ? 'message' : 'smartphone',
+                  color: AppTheme.primary,
+                  size: 28,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
           Text(
-            _otpSent ? 'Enter OTP' : 'Phone Login',
+            _otpSent ? 'Enter Verification Code' : 'Phone Login',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 20,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A2E1A),
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
           Text(
             _otpSent
-                ? 'Enter the 6-digit code sent to +977 ${_phoneController.text}'
-                : 'Enter your registered phone number',
+                ? 'A 6-digit code was sent to +977 ${_phoneCtrl.text.trim()}'
+                : 'Enter your Nepal phone number to receive an OTP',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               color: theme.colorScheme.outline,
+              height: 1.5,
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
-          if (!_otpSent)
-            TextFormField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              style: GoogleFonts.plusJakartaSans(fontSize: 15),
-              decoration: InputDecoration(
-                labelText: 'Phone Number',
-                prefixText: '+977 ',
-                prefixStyle: GoogleFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
+          const SizedBox(height: 24),
+
+          if (!_otpSent) ...[
+            // Phone input
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F4ED),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant,
                 ),
-                hintText: '98XXXXXXXX',
               ),
-            )
-          else
-            TextFormField(
-              controller: _otpController,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 8,
-              ),
-              textAlign: TextAlign.center,
-              decoration: const InputDecoration(
-                labelText: 'OTP Code',
-                counterText: '',
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      '🇳🇵 +977',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1A2E1A),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: '98XXXXXXXX',
+                        hintStyle: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          color: theme.colorScheme.outline,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _isLoading
-                  ? null
-                  : (_otpSent ? _verifyOtp : _sendOtp),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
+          ] else ...[
+            // OTP input boxes
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 60.w,
+                  child: TextField(
+                    controller: _otpCtrl,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 10,
+                      color: AppTheme.primary,
+                    ),
+                    decoration: InputDecoration(
+                      counterText: '',
+                      hintText: '······',
+                      hintStyle: GoogleFonts.plusJakartaSans(
+                        fontSize: 28,
+                        letterSpacing: 10,
+                        color: theme.colorScheme.outlineVariant,
+                        fontWeight: FontWeight.w300,
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFF0F4ED),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: AppTheme.primary,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 18,
+                        horizontal: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton(
+                onPressed: _loading ? null : () => setState(() {
+                  _otpSent = false;
+                  _otpCtrl.clear();
+                }),
+                child: Text(
+                  'Change number',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    color: AppTheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-              child: _isLoading
+            ),
+          ],
+
+          const SizedBox(height: 20),
+
+          // CTA
+          SizedBox(
+            height: 54,
+            child: ElevatedButton(
+              onPressed: _loading ? null : (_otpSent ? _verifyOtp : _sendOtp),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: _loading
                   ? const SizedBox(
-                      width: 22,
-                      height: 22,
+                      width: 22, height: 22,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+                        strokeWidth: 2.5, color: Colors.white,
                       ),
                     )
                   : Text(
                       _otpSent ? 'Verify & Continue' : 'Send OTP',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
                     ),

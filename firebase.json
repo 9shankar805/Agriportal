@@ -6,8 +6,11 @@
     "rules": "firebase/firestore.rules",
     "indexes": "firebase/firestore.indexes.json"
   },
+  "storage": {
+    "rules": "firebase/storage.rules"
+  },
   "hosting": {
-    "public": "admin_panel",
+    "public": "admin_panel_next/out",
     "ignore": [
       "firebase.json",
       "**/.*",

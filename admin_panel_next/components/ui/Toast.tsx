@@ -3,25 +3,32 @@ import { CheckCircle, AlertTriangle, XCircle, Info, X } from 'lucide-react';
 import { useAdmin } from '@/context/AdminContext';
 
 const CONFIG = {
-  success: { bg: 'bg-green-600', icon: CheckCircle },
-  warning: { bg: 'bg-amber-500', icon: AlertTriangle },
-  danger:  { bg: 'bg-red-600',   icon: XCircle },
-  info:    { bg: 'bg-blue-600',  icon: Info },
+  success: { bg: 'bg-gradient-to-r from-green-500 to-emerald-600', icon: CheckCircle },
+  warning: { bg: 'bg-gradient-to-r from-amber-500 to-orange-600', icon: AlertTriangle },
+  danger:  { bg: 'bg-gradient-to-r from-red-500 to-rose-600',   icon: XCircle },
+  info:    { bg: 'bg-gradient-to-r from-blue-500 to-indigo-600',  icon: Info },
 };
 
 export default function ToastContainer() {
-  const { toasts } = useAdmin();
+  const { toasts, removeToast } = useAdmin();
   return (
-    <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
       {toasts.map(t => {
         const { bg, icon: Icon } = CONFIG[t.type] || CONFIG.info;
         return (
           <div
             key={t.id}
-            className={`toast-in flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-white text-sm font-semibold min-w-[260px] pointer-events-auto ${bg}`}
+            className={`toast-in flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl text-white text-sm font-semibold min-w-[300px] pointer-events-auto ${bg}`}
           >
-            <Icon size={16} className="flex-shrink-0" />
+            <Icon size={20} className="flex-shrink-0" />
             <span className="flex-1">{t.msg}</span>
+            <button
+              onClick={() => removeToast(t.id)}
+              className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+              aria-label="Close"
+            >
+              <X size={16} />
+            </button>
           </div>
         );
       })}

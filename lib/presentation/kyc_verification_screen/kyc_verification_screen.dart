@@ -7,6 +7,7 @@ import '../../core/firestore_service.dart';
 import '../../core/imgbb_service.dart';
 import '../../core/user_session.dart';
 import '../../widgets/custom_icon_widget.dart';
+import '../../widgets/custom_image_widget.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // KYC Verification Screen
@@ -307,6 +308,15 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Nepal Sarkar Logo
+            Center(
+              child: CustomImageWidget(
+                imageUrl: 'assets/Nepal_Images/nepal_sarkar_logo.jpg',
+                height: 80,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 24),
             // Info banner
             Container(
               padding: const EdgeInsets.all(14),

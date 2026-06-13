@@ -4,13 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/firestore_service.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_image_widget.dart';
 import '../../land_listings_screen/land_listings_screen.dart';
 
-class SimilarLandsWidget extends StatelessWidget {
+class SimilarLandsWidget extends StatefulWidget {
   final String currentLandId;
 
   const SimilarLandsWidget({
@@ -21,7 +22,29 @@ class SimilarLandsWidget extends StatelessWidget {
   });
 
   @override
+  State<SimilarLandsWidget> createState() => _SimilarLandsWidgetState();
+}
+
+class _SimilarLandsWidgetState extends State<SimilarLandsWidget> {
+  @override
+  void initState() {
+    super.initState();
+    LanguageController.instance.addListener(_onLanguageChanged);
+  }
+
+  @override
+  void dispose() {
+    LanguageController.instance.removeListener(_onLanguageChanged);
+    super.dispose();
+  }
+
+  void _onLanguageChanged() {
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
     return StreamBuilder<QuerySnapshot>(
@@ -31,7 +54,7 @@ class SimilarLandsWidget extends StatelessWidget {
 
         final similar = snapshot.data!.docs
             .map(LandModel.fromFirestore)
-            .where((l) => l.id != currentLandId && l.title.isNotEmpty)
+            .where((l) => l.id != widget.currentLandId && l.title.isNotEmpty)
             .take(4)
             .toList();
 
@@ -46,7 +69,7 @@ class SimilarLandsWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Similar Lands',
+                    t.similarLands,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -56,7 +79,7 @@ class SimilarLandsWidget extends StatelessWidget {
                   TextButton(
                     onPressed: () => context.go(AppRoutes.landListings),
                     child: Text(
-                      'See All',
+                      t.seeAll,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -124,7 +147,7 @@ class SimilarLandsWidget extends StatelessWidget {
                             left: 8,
                             right: 8,
                             child: Text(
-                              'NPR ${land.leasePriceMonthly.toStringAsFixed(0)}/mo',
+                              'NPR ${land.leasePriceMonthly.toStringAsFixed(0)}${t.perMonthSuffix}',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,

@@ -1,27 +1,6 @@
 {
   "rules": {
-    "conversations": {
-      "$conversationId": {
-        ".read":  "auth != null && (data.child('participantAId').val() === auth.uid || data.child('participantBId').val() === auth.uid || root.child('admins').child(auth.uid).exists())",
-        ".write": "auth != null && (data.child('participantAId').val() === auth.uid || data.child('participantBId').val() === auth.uid || !data.exists() || root.child('admins').child(auth.uid).exists())"
-      }
-    },
-    "messages": {
-      "$conversationId": {
-        ".read":  "auth != null",
-        "$messageId": {
-          ".write": "auth != null"
-        }
-      }
-    },
-    "presence": {
-      "$uid": {
-        ".read":  "auth != null",
-        ".write": "auth != null && auth.uid === $uid"
-      }
-    },
-    "admins": {
-      ".read": "auth != null"
-    }
+    ".read": true,
+    ".write": true
   }
 }

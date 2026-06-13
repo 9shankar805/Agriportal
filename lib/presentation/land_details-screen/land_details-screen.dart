@@ -2,10 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 
 import '../../core/app_export.dart';
+import '../../core/app_localizations.dart';
 import '../../core/firestore_service.dart';
 import '../../core/user_session.dart';
+import '../../models/nepal_location_model.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_icon_widget.dart';
@@ -36,11 +40,70 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
   bool _applicationSubmitted = false;
   String _ownerId   = '';
   String _ownerName = '';
+  NepalLocationResponse? _nepalLocationData;
 
   @override
   void initState() {
     super.initState();
     _loadLand();
+    _loadNepalLocationData();
+    LanguageController.instance.addListener(_onLanguageChanged);
+  }
+
+  @override
+  void dispose() {
+    LanguageController.instance.removeListener(_onLanguageChanged);
+    super.dispose();
+  }
+
+  void _onLanguageChanged() {
+    setState(() {});
+  }
+
+  Future<void> _loadNepalLocationData() async {
+    try {
+      final String response = await rootBundle.loadString('assets/nepal_location.json');
+      final data = json.decode(response);
+      if (mounted) {
+        setState(() {
+          _nepalLocationData = NepalLocationResponse.fromJson(data);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading nepal location data: $e');
+    }
+  }
+
+  String _getTranslatedName(String nameEn) {
+    if (_nepalLocationData == null) return nameEn;
+    
+    for (final province in _nepalLocationData!.provinceList) {
+      if (province.nameEn == nameEn) {
+        if (LanguageController.instance.isNepali && province.nameNp != null) {
+          return province.nameNp!;
+        }
+        return province.nameEn;
+      }
+      
+      for (final district in province.districtList) {
+        if (district.nameEn == nameEn) {
+          if (LanguageController.instance.isNepali && district.nameNp != null) {
+            return district.nameNp!;
+          }
+          return district.nameEn;
+        }
+        
+        for (final municipality in district.municipalityList) {
+          if (municipality.nameEn == nameEn) {
+            if (LanguageController.instance.isNepali && municipality.nameNp != null) {
+              return municipality.nameNp!;
+            }
+            return municipality.nameEn;
+          }
+        }
+    }
+    
+    return nameEn;
   }
 
   Future<void> _loadLand() async {
@@ -108,6 +171,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
 
   void _showKycDialog(String title, String message,
       {bool showKycButton = false}) {
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -120,7 +184,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('OK',
+            child: Text(t.ok,
                 style: GoogleFonts.plusJakartaSans(
                     color: AppTheme.primary)),
           ),
@@ -135,7 +199,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(999)),
               ),
-              child: Text('Verify Now',
+              child: Text(t.verifyNow,
                   style: GoogleFonts.plusJakartaSans(
                       color: Colors.white, fontWeight: FontWeight.w600)),
             ),
@@ -147,6 +211,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
   /// Toggle save/unsave — persists to Firestore
   Future<void> _onSave() async {
     if (UserSession.instance.uid.isEmpty || _land == null) return;
+    final t = AppLocalizations.of(context);
     final newSaved = !_isSaved;
     setState(() => _isSaved = newSaved);
     try {
@@ -165,7 +230,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Saved to your collection',
+              content: Text(t.savedToYourCollection,
                   style: GoogleFonts.plusJakartaSans(color: Colors.white)),
               backgroundColor: AppTheme.success,
               behavior: SnackBarBehavior.floating,
@@ -204,6 +269,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
   }
 
   void _showSuccessSnack() {
+    final t = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -215,7 +281,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Application submitted! Admin will review shortly.',
+              t.applicationSubmittedSuccess,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 color: Colors.white,
@@ -245,6 +311,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
     }
 
     if (_land == null) {
+      final t = AppLocalizations.of(context);
       return Scaffold(
         appBar: AppBar(
           leading: IconButton(
@@ -256,7 +323,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
             ),
           ),
         ),
-        body: const Center(child: Text('Land not found')),
+        body: Center(child: Text(t.landNotFound)),
       );
     }
 
@@ -325,7 +392,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
                       // Owner contact
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                        child: OwnerContactWidget(land: _land!),
+                        child: OwnerContactWidget(land: _land!, ownerId: _ownerId),
                       ),
                       // Virtual tour / photo gallery
                       Padding(
@@ -481,7 +548,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
                       padding: const EdgeInsets.only(bottom: 16),
                       child: _buildNoLocationCard(theme),
                     ),
-                  OwnerContactWidget(land: _land!),
+                  OwnerContactWidget(land: _land!, ownerId: _ownerId),
                   const SizedBox(height: 16),
                   CustomizeOptionsWidget(category: _land!.category),
                   const SizedBox(height: 16),
@@ -505,6 +572,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
   }
 
   Widget _buildTitlePriceRow(ThemeData theme) {
+    final t = AppLocalizations.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -541,7 +609,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
               ),
             ),
             Text(
-              'per month',
+              t.perMonth,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
                 color: theme.colorScheme.outline,
@@ -562,11 +630,15 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
           size: 16,
         ),
         const SizedBox(width: 4),
-        Text(
-          '${_land!.municipality}, ${_land!.district}, ${_land!.province} Province',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            color: theme.colorScheme.outline,
+        Expanded(
+          child: Text(
+            '${_getTranslatedName(_land!.municipality)}, ${_getTranslatedName(_land!.district)}, ${_getTranslatedName(_land!.province)} Province',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: theme.colorScheme.outline,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -574,6 +646,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
   }
 
   Widget _buildDescription(ThemeData theme) {
+    final t = AppLocalizations.of(context);
     final soil = _land!.soilType.isNotEmpty ? _land!.soilType.toLowerCase() : 'fertile';
     final water = _land!.waterSource.isNotEmpty ? _land!.waterSource.toLowerCase() : 'natural sources';
     final cat = _land!.category.isNotEmpty ? _land!.category.toLowerCase() : 'agricultural';
@@ -582,7 +655,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'About This Land',
+          t.aboutThisLand,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -611,7 +684,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
             _FactChip(icon: 'terrain', label: _land!.soilType.isNotEmpty ? _land!.soilType : 'Mixed Soil'),
             _FactChip(icon: 'water_drop', label: _land!.waterSource.isNotEmpty ? _land!.waterSource : 'Natural'),
             if (_land!.hasIrrigation)
-              _FactChip(icon: 'water', label: 'Irrigated'),
+              _FactChip(icon: 'water', label: t.irrigated),
             _FactChip(icon: 'category', label: _land!.category.isNotEmpty ? _land!.category : 'General'),
           ],
         ),
@@ -620,6 +693,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
   }
 
   Widget _buildNoLocationCard(ThemeData theme) {
+    final t = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -636,7 +710,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
           ),
           const SizedBox(width: 10),
           Text(
-            'Exact location not provided by owner',
+            t.exactLocationNotProvided,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               color: theme.colorScheme.outline,
@@ -745,9 +819,10 @@ class _ApplicationSheetState extends State<_ApplicationSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
+        final t = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Submission failed: $e'),
+            content: Text('${t.submissionFailed} $e'),
             backgroundColor: AppTheme.error,
             behavior: SnackBarBehavior.floating,
           ),
@@ -759,6 +834,7 @@ class _ApplicationSheetState extends State<_ApplicationSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -813,7 +889,7 @@ class _ApplicationSheetState extends State<_ApplicationSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Submit Application',
+                          t.submitApplication,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
@@ -850,7 +926,7 @@ class _ApplicationSheetState extends State<_ApplicationSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Your contact details remain private until admin approves this application.',
+                        t.yourContactDetailsRemainPrivate,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           color: AppTheme.warning,
@@ -863,7 +939,7 @@ class _ApplicationSheetState extends State<_ApplicationSheet> {
               const SizedBox(height: 16),
               // Years of experience
               Text(
-                'Farming Experience',
+                t.farmingExperience,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -906,7 +982,7 @@ class _ApplicationSheetState extends State<_ApplicationSheet> {
                               ),
                             ),
                             Text(
-                              'yr${val > 1 ? 's' : ''}',
+                              val > 1 ? t.years : t.year,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 9,
                                 color: isSelected
@@ -927,8 +1003,8 @@ class _ApplicationSheetState extends State<_ApplicationSheet> {
                 controller: _cropsController,
                 style: GoogleFonts.plusJakartaSans(fontSize: 14),
                 decoration: InputDecoration(
-                  labelText: 'Intended Crops',
-                  hintText: 'e.g. Rice, Wheat, Vegetables',
+                  labelText: t.intendedCrops,
+                  hintText: t.cropsHint,
                   prefixIcon: Padding(
                     padding: const EdgeInsets.only(left: 12, right: 8),
                     child: CustomIconWidget(
@@ -943,7 +1019,7 @@ class _ApplicationSheetState extends State<_ApplicationSheet> {
                   ),
                 ),
                 validator: (v) => (v == null || v.isEmpty)
-                    ? 'Please enter intended crops'
+                    ? t.pleaseEnterIntendedCrops
                     : null,
               ),
               const SizedBox(height: 12),
@@ -952,14 +1028,13 @@ class _ApplicationSheetState extends State<_ApplicationSheet> {
                 controller: _proposalController,
                 style: GoogleFonts.plusJakartaSans(fontSize: 14),
                 maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Proposal Message',
-                  hintText:
-                      'Describe your farming plan, why you want this land, and your experience...',
+                decoration: InputDecoration(
+                  labelText: t.proposalMessage,
+                  hintText: t.proposalHint,
                   alignLabelWithHint: true,
                 ),
                 validator: (v) => (v == null || v.length < 20)
-                    ? 'Please write at least 20 characters'
+                    ? t.pleaseWriteAtLeast20Characters
                     : null,
               ),
               const SizedBox(height: 20),
@@ -992,7 +1067,7 @@ class _ApplicationSheetState extends State<_ApplicationSheet> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Submit Application',
+                              t.submitApplication,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,

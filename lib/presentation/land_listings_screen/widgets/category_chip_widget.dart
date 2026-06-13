@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/app_localizations.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
@@ -32,9 +33,27 @@ class CategoryChipWidget extends StatelessWidget {
     }
   }
 
+  String _getTranslatedCategory(String cat, AppLocalizations t) {
+    switch (cat) {
+      case 'All':
+        return t.allCategories;
+      case 'Paddy':
+        return t.paddy;
+      case 'Vegetable':
+        return t.vegetable;
+      case 'Orchard':
+        return t.orchard;
+      case 'Pasture':
+        return t.pasture;
+      default:
+        return cat;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
     return SizedBox(
       height: 88,
       child: ListView.separated(
@@ -95,7 +114,7 @@ class CategoryChipWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    cat,
+                    _getTranslatedCategory(cat, t),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 10,
                       fontWeight: isSelected

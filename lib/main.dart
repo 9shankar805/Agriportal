@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sizer/sizer.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'core/app_export.dart';
+import 'core/app_localizations.dart';
 import 'core/user_session.dart';
 import 'core/notification_service.dart';
 import 'widgets/custom_error_widget.dart';
@@ -21,7 +23,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Register background FCM handler (must be before NotificationService.init)
+  // Register background FCM handler (must be top-level, before NotificationService.init)
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Initialize push notifications — non-fatal: app works even if FCM fails
@@ -59,24 +61,44 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Sizer(
-      builder: (context, orientation, screenType) {
-        return MaterialApp.router(
-          title: 'AgriPortal',
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.light,
-          // 🚨 CRITICAL: NEVER REMOVE OR MODIFY
-          builder: (context, child) {
-            return MediaQuery(
-              data: MediaQuery.of(context)
-                  .copyWith(textScaler: TextScaler.linear(1.0)),
-              child: child!,
+    // Rebuild when language or theme changes
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        LanguageController.instance,
+        ThemeController.instance,
+      ]),
+      builder: (context, _) {
+        return Sizer(
+          builder: (context, orientation, screenType) {
+            return MaterialApp.router(
+              title: 'AgriPortal',
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: ThemeController.instance.themeMode,
+
+              // ── Bilingual localisation ─────────────────────────────────
+              locale: LanguageController.instance.locale,
+              supportedLocales: const [Locale('en'), Locale('ne')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+
+              // 🚨 CRITICAL: NEVER REMOVE OR MODIFY
+              builder: (context, child) {
+                return MediaQuery(
+                  data: MediaQuery.of(context)
+                      .copyWith(textScaler: TextScaler.linear(1.0)),
+                  child: child!,
+                );
+              },
+              // 🚨 END CRITICAL SECTION
+              debugShowCheckedModeBanner: false,
+              routerConfig: appRouter,
             );
           },
-          // 🚨 END CRITICAL SECTION
-          debugShowCheckedModeBanner: false,
-          routerConfig: appRouter,
         );
       },
     );

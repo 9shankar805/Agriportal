@@ -1,8 +1,9 @@
 'use client';
-import { Leaf, LayoutDashboard, Users, ShieldCheck, MapPin, FileText, MessageSquare, BarChart3, Headphones, Settings, LogOut } from 'lucide-react';
+import { Leaf, LayoutDashboard, Users, ShieldCheck, MapPin, FileText, MessageSquare, BarChart3, Headphones, Settings, LogOut, Wallet, ChevronRight } from 'lucide-react';
 import { useAdmin } from '@/context/AdminContext';
+import Avatar from '@/components/ui/Avatar';
 
-type SectionId = 'overview' | 'users' | 'kyc' | 'lands' | 'applications' | 'messages' | 'analytics' | 'support' | 'settings';
+type SectionId = 'overview' | 'users' | 'kyc' | 'lands' | 'applications' | 'messages' | 'analytics' | 'wallet' | 'support' | 'settings';
 
 interface SidebarProps {
   active: SectionId;
@@ -23,18 +24,20 @@ const CONTENT_NAV = [
 ];
 const REPORT_NAV = [
   { id: 'analytics'    as SectionId, label: 'Analytics',       icon: BarChart3 },
+  { id: 'wallet'       as SectionId, label: 'Wallet',          icon: Wallet,       badge: 'nbWallet' },
   { id: 'support'      as SectionId, label: 'Support Messages',icon: Headphones,   badge: 'nbSupport', warn: true },
   { id: 'settings'     as SectionId, label: 'Settings',        icon: Settings },
 ];
 
 export default function Sidebar({ active, onNav, onLogout, adminName }: SidebarProps) {
-  const { users, apps, convs, supportMsgs } = useAdmin();
+  const { users, apps, convs, supportMsgs, wallets } = useAdmin();
   const badges: Record<string, number> = {
     nbUsers:   users.length,
     nbKyc:     users.filter(u => u.kycStatus === 'pending').length,
     nbApps:    apps.filter(a => a.status === 'pending').length,
     nbMsgs:    convs.length,
     nbSupport: supportMsgs.filter(m => m.status === 'open').length,
+    nbWallet:  wallets.filter(w => w.balance > 0).length,
   };
 
   const NavItem = ({ item }: { item: typeof MAIN_NAV[0] }) => {
@@ -44,21 +47,22 @@ export default function Sidebar({ active, onNav, onLogout, adminName }: SidebarP
       <li>
         <button
           onClick={() => onNav(item.id)}
-          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
+          className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all duration-200 group
             ${isActive
-              ? 'bg-white/20 text-white font-bold shadow-inner border-l-2 border-green-300'
-              : 'text-white/70 hover:bg-white/10 hover:text-white'
+              ? 'bg-white/20 text-white shadow-lg border border-white/30'
+              : 'text-white/70 hover:bg-white/10 hover:text-white hover:translate-x-1'
             }`}
           aria-current={isActive ? 'page' : undefined}
         >
-          <item.icon size={17} className="flex-shrink-0" />
+          <item.icon size={20} className="flex-shrink-0" />
           <span className="flex-1 text-left">{item.label}</span>
           {count > 0 && (
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0
+            <span className={`text-[11px] font-black px-2.5 py-1 rounded-full flex-shrink-0 shadow-sm
               ${item.warn ? 'bg-amber-400 text-amber-900' : 'bg-green-400 text-green-900'}`}>
               {count}
             </span>
           )}
+          {isActive && <ChevronRight size={16} className="flex-shrink-0" />}
         </button>
       </li>
     );
@@ -66,57 +70,65 @@ export default function Sidebar({ active, onNav, onLogout, adminName }: SidebarP
 
   return (
     <nav
-      className="w-[260px] min-w-[260px] min-h-screen flex flex-col"
-      style={{ background: 'linear-gradient(180deg, #1b5e20 0%, #1e7e34 60%, #256029 100%)' }}
+      className="w-72 min-h-screen flex flex-col shadow-xl"
+      style={{ background: 'linear-gradient(180deg, #14532d 0%, #166534 40%, #15803d 100%)' }}
       aria-label="Admin navigation"
     >
       {/* Brand */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
-        <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
-          <Leaf size={20} className="text-green-200" />
+      <div className="flex items-center gap-4 px-6 py-7 border-b border-white/10">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+          <Leaf size={28} className="text-white" />
         </div>
         <div>
-          <div className="font-extrabold text-white leading-none">AgriPortal</div>
-          <div className="text-white/50 text-[10px] mt-0.5">Admin Console</div>
+          <div className="font-black text-white text-xl leading-none">AgriPortal</div>
+          <div className="text-white/60 text-xs mt-1 font-semibold">Admin Console</div>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 py-3 overflow-y-auto">
-        <div className="px-5 py-2 text-[10px] font-extrabold tracking-widest text-white/35 uppercase">Main</div>
-        <ul className="px-2 space-y-0.5">
-          {MAIN_NAV.map(item => <NavItem key={item.id} item={item} />)}
-        </ul>
+      <div className="flex-1 py-6 overflow-y-auto px-4 space-y-5">
+        <div>
+          <div className="px-4 py-2 text-[11px] font-black tracking-widest text-white/40 uppercase mb-2">Main</div>
+          <ul className="space-y-2">
+            {MAIN_NAV.map(item => <NavItem key={item.id} item={item} />)}
+          </ul>
+        </div>
 
-        <div className="px-5 py-2 mt-3 text-[10px] font-extrabold tracking-widest text-white/35 uppercase">Content</div>
-        <ul className="px-2 space-y-0.5">
-          {CONTENT_NAV.map(item => <NavItem key={item.id} item={item} />)}
-        </ul>
+        <div>
+          <div className="px-4 py-2 text-[11px] font-black tracking-widest text-white/40 uppercase mb-2">Content</div>
+          <ul className="space-y-2">
+            {CONTENT_NAV.map(item => <NavItem key={item.id} item={item} />)}
+          </ul>
+        </div>
 
-        <div className="px-5 py-2 mt-3 text-[10px] font-extrabold tracking-widest text-white/35 uppercase">Reports</div>
-        <ul className="px-2 space-y-0.5">
-          {REPORT_NAV.map(item => <NavItem key={item.id} item={item} />)}
-        </ul>
+        <div>
+          <div className="px-4 py-2 text-[11px] font-black tracking-widest text-white/40 uppercase mb-2">Reports & Settings</div>
+          <ul className="space-y-2">
+            {REPORT_NAV.map(item => <NavItem key={item.id} item={item} />)}
+          </ul>
+        </div>
       </div>
 
       {/* Footer */}
-      <div className="border-t border-white/10 px-4 py-4 flex items-center gap-3">
-        <img
-          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(adminName)}&background=4ade80&color=1a2d1c&bold=true`}
-          alt={adminName}
-          className="w-9 h-9 rounded-full border-2 border-white/30 flex-shrink-0"
+      <div className="border-t border-white/10 px-5 py-6 flex items-center gap-4 mx-4 my-4 rounded-3xl bg-white/10">
+        <Avatar
+          name={adminName}
+          photoUrl={typeof window !== 'undefined' ? undefined : undefined}
+          size={52}
+          radius="16px"
+          className="border-2 border-white/30 flex-shrink-0 shadow-md"
         />
         <div className="flex-1 min-w-0">
-          <div className="text-white font-semibold text-sm truncate">{adminName}</div>
-          <div className="text-white/50 text-[10px]">Super Admin</div>
+          <div className="text-white font-extrabold text-sm truncate">{adminName}</div>
+          <div className="text-white/60 text-xs font-medium">Super Admin</div>
         </div>
         <button
           onClick={onLogout}
-          className="p-1.5 rounded-lg text-white/60 hover:bg-white/15 hover:text-white transition-colors"
+          className="p-3 rounded-2xl text-white/70 hover:bg-white/20 hover:text-white transition-all"
           title="Logout"
           aria-label="Logout"
         >
-          <LogOut size={16} />
+          <LogOut size={20} />
         </button>
       </div>
     </nav>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_export.dart';
+import '../../../core/app_localizations.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_icon_widget.dart';
 
@@ -21,6 +22,7 @@ class DetailActionBarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -66,7 +68,7 @@ class DetailActionBarWidget extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      isSaved ? 'Saved' : 'Save',
+                      isSaved ? t.saved : t.save,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -108,7 +110,7 @@ class DetailActionBarWidget extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      applicationSubmitted ? 'Applied' : 'Apply Now',
+                      applicationSubmitted ? t.applied : t.applyNow,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,

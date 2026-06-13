@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../core/app_localizations.dart';
 import '../../core/firebase_auth_service.dart';
 import '../../core/firestore_service.dart';
 import '../../core/imgbb_service.dart';
@@ -21,6 +22,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final firebaseUser = FirebaseAuth.instance.currentUser;
 
@@ -30,7 +32,7 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         title: Text(
-          'Profile',
+          t.profileTitle,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 16.sp,
             fontWeight: FontWeight.w700,
@@ -40,7 +42,7 @@ class ProfileScreen extends StatelessWidget {
         centerTitle: false,
       ),
       body: firebaseUser == null
-          ? _buildNotSignedIn(context, theme)
+          ? _buildNotSignedIn(context, theme, t)
           : StreamBuilder<DocumentSnapshot>(
               stream: FirestoreService.instance.userStream(firebaseUser.uid),
               builder: (context, snapshot) {
@@ -49,13 +51,14 @@ class ProfileScreen extends StatelessWidget {
                   firebaseUser: firebaseUser,
                   userData: data,
                   theme: theme,
+                  t: t,
                 );
               },
             ),
     );
   }
 
-  Widget _buildNotSignedIn(BuildContext context, ThemeData theme) {
+  Widget _buildNotSignedIn(BuildContext context, ThemeData theme, AppLocalizations t) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -67,7 +70,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           SizedBox(height: 2.h),
           Text(
-            'Not Signed In',
+            t.notSignedIn,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 16.sp, fontWeight: FontWeight.w700,
             ),
@@ -75,7 +78,7 @@ class ProfileScreen extends StatelessWidget {
           SizedBox(height: 1.h),
           ElevatedButton(
             onPressed: () => context.go(AppRoutes.signUpLogin),
-            child: Text('Sign In', style: GoogleFonts.plusJakartaSans()),
+            child: Text(t.signIn, style: GoogleFonts.plusJakartaSans()),
           ),
         ],
       ),
@@ -87,11 +90,13 @@ class _ProfileBody extends StatefulWidget {
   final User firebaseUser;
   final Map<String, dynamic>? userData;
   final ThemeData theme;
+  final AppLocalizations t;
 
   const _ProfileBody({
     required this.firebaseUser,
     required this.userData,
     required this.theme,
+    required this.t,
   });
 
   @override
@@ -142,9 +147,10 @@ class _ProfileBodyState extends State<_ProfileBody> {
 
   @override
   Widget build(BuildContext context) {
-    final theme  = widget.theme;
-    final user   = widget.firebaseUser;
-    final data   = widget.userData ?? {};
+    final t = widget.t;
+    final theme = widget.theme;
+    final user = widget.firebaseUser;
+    final data = widget.userData ?? {};
 
     final name       = data['name'] as String? ?? user.displayName ?? 'User';
     final email      = data['email'] as String? ?? user.email ?? '';
@@ -154,24 +160,26 @@ class _ProfileBodyState extends State<_ProfileBody> {
     final role       = data['role'] as String? ?? UserSession.instance.role.name;
 
     final kycLabel = kycStatus == 'verified'
-        ? 'KYC Verified'
+        ? t.kycVerified
         : kycStatus == 'pending'
-            ? 'KYC Pending'
-            : 'KYC Rejected';
+            ? t.kycPending
+            : t.kycRejected;
 
     final List<Map<String, dynamic>> menuItems = [
-      {'icon': 'person_outline',        'label': 'Edit Profile'},
-      {'icon': 'verified_user',         'label': 'KYC Verification'},
-      {'icon': 'account_balance_wallet','label': 'My Wallet'},
-      {'icon': 'landscape',             'label': 'My Land Listings'},
-      {'icon': 'assignment',            'label': 'My Applications'},
-      {'icon': 'favorite_border',       'label': 'Saved Lands'},
-      {'icon': 'star_outline',          'label': 'Reviews & Ratings'},
-      {'icon': 'notifications_outlined','label': 'Notifications'},
-      {'icon': 'chat_bubble_outline',   'label': 'Messages'},
-      {'icon': 'help_outline',          'label': 'Help & Support'},
-      {'icon': 'swap_horiz',            'label': role == 'landOwner' ? 'Switch to Farmer' : 'Switch to Land Owner'},
-      {'icon': 'logout',                'label': 'Logout'},
+      {'key': 'edit_profile',        'icon': 'person_outline',        'label': t.editProfile},
+      {'key': 'kyc',                 'icon': 'verified_user',         'label': t.kycVerification},
+      {'key': 'wallet',              'icon': 'account_balance_wallet','label': t.myWallet},
+      {'key': 'my_lands',            'icon': 'landscape',             'label': t.myLandListings},
+      {'key': 'my_applications',     'icon': 'assignment',            'label': t.myApplications},
+      {'key': 'saved_lands',         'icon': 'favorite_border',       'label': t.savedLands},
+      {'key': 'reviews',             'icon': 'star_outline',          'label': t.reviewsAndRatings},
+      {'key': 'notifications',       'icon': 'notifications_outlined','label': t.notifications},
+      {'key': 'messages',            'icon': 'chat_bubble_outline',   'label': t.messages},
+      {'key': 'help',                'icon': 'help_outline',          'label': t.helpAndSupport},
+      {'key': 'settings',            'icon': 'settings',              'label': t.settings},
+      {'key': 'switch_role',         'icon': 'swap_horiz',            'label': role == 'landOwner' ? t.switchToFarmer : t.switchToLandOwner},
+      {'key': 'admin',               'icon': 'admin_panel_settings',  'label': t.adminPanel},
+      {'key': 'logout',              'icon': 'logout',                'label': t.logout},
     ];
 
     return SingleChildScrollView(
@@ -274,7 +282,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                       const SizedBox(width: 5),
                       Flexible(
                         child: Text(
-                          '$kycLabel · ${role == 'landOwner' ? 'Land Owner' : 'Farmer'}',
+                          '$kycLabel · ${role == 'landOwner' ? t.landOwner : t.farmer}',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -298,11 +306,11 @@ class _ProfileBodyState extends State<_ProfileBody> {
             padding: EdgeInsets.symmetric(horizontal: 4.w),
             child: Row(
               children: [
-                _statCard(theme, _appCount.toString(), 'Applications'),
+                _statCard(theme, _appCount.toString(), t.applicationsStat),
                 SizedBox(width: 3.w),
-                _statCard(theme, _approvedCount.toString(), 'Approved'),
+                _statCard(theme, _approvedCount.toString(), t.approvedStat),
                 SizedBox(width: 3.w),
-                _statCard(theme, '—', 'Rating'),
+                _statCard(theme, '—', t.ratingStat),
               ],
             ),
           ),
@@ -338,7 +346,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'My Wallet',
+                            t.myWallet,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               color: Colors.white.withAlpha(200),
@@ -367,7 +375,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        'Add Money',
+                        t.addMoney,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -399,12 +407,12 @@ class _ProfileBodyState extends State<_ProfileBody> {
                   final index   = entry.key;
                   final item    = entry.value;
                   final isLast  = index == menuItems.length - 1;
-                  final isLogout = item['label'] == 'Logout';
+                  final isLogout = item['key'] == 'logout';
 
                   return Column(
                     children: [
                       InkWell(
-                        onTap: () => _handleMenuTap(context, item['label'] as String),
+                        onTap: () => _handleMenuTap(context, item['key'] as String, t),
                         borderRadius: BorderRadius.only(
                           topLeft:     index == 0 ? const Radius.circular(12) : Radius.zero,
                           topRight:    index == 0 ? const Radius.circular(12) : Radius.zero,
@@ -466,33 +474,37 @@ class _ProfileBodyState extends State<_ProfileBody> {
     );
   }
 
-  void _handleMenuTap(BuildContext context, String label) {
+  void _handleMenuTap(BuildContext context, String key, AppLocalizations t) {
     final data   = widget.userData ?? {};
     final role   = data['role'] as String? ?? UserSession.instance.role.name;
 
-    switch (label) {
-      case 'Edit Profile':       _showEditProfileSheet(context);            break;
-      case 'KYC Verification':   context.push(AppRoutes.kycVerification);   break;
-      case 'My Wallet':          pushWalletScreen(context);                  break;
-      case 'Notifications':      context.push(AppRoutes.notifications);     break;
-      case 'Saved Lands':        context.push(AppRoutes.savedLands);        break;
-      case 'Reviews & Ratings':  context.push(AppRoutes.reviews);           break;
-      case 'Help & Support':     context.push(AppRoutes.helpSupport);       break;
-      case 'Messages':           context.go(AppRoutes.chat);                break;
-      case 'Switch to Land Owner':
-      case 'Switch to Farmer':
+    switch (key) {
+      case 'edit_profile':       _showEditProfileSheet(context, t);            break;
+      case 'kyc':                context.push(AppRoutes.kycVerification);   break;
+      case 'wallet':             pushWalletScreen(context);                  break;
+      case 'my_lands':           context.go(AppRoutes.myLands);             break;
+      case 'my_applications':    context.go(AppRoutes.applications);        break;
+      case 'saved_lands':        context.push(AppRoutes.savedLands);        break;
+      case 'reviews':            context.push(AppRoutes.reviews);           break;
+      case 'notifications':      context.push(AppRoutes.notifications);     break;
+      case 'messages':           context.go(AppRoutes.chat);                break;
+      case 'help':               context.push(AppRoutes.helpSupport);       break;
+      case 'settings':           context.push(AppRoutes.settings);          break;
+      case 'switch_role':
         _showRoleSwitchDialog(
           context,
           role == 'landOwner' ? 'farmer' : 'landOwner',
+          t,
         );
         break;
-      case 'Logout':             _signOut();                                 break;
+      case 'admin':              context.push(AppRoutes.adminPanel);        break;
+      case 'logout':             _signOut();                                 break;
     }
   }
 
   // ── Edit Profile sheet ───────────────────────────────────────────────────
 
-  void _showEditProfileSheet(BuildContext context) {
+  void _showEditProfileSheet(BuildContext context, AppLocalizations t) {
     final user   = widget.firebaseUser;
     final data   = widget.userData ?? {};
     final theme  = widget.theme;
@@ -570,7 +582,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        'Profile updated successfully',
+                        t.profileUpdatedSuccessfully,
                         style: GoogleFonts.plusJakartaSans(fontSize: 13),
                       ),
                       backgroundColor: theme.colorScheme.primary,
@@ -613,7 +625,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Edit Profile',
+                      t.editProfile,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 18, fontWeight: FontWeight.w700,
                         color: theme.colorScheme.onSurface,
@@ -689,7 +701,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                       controller: nameCtrl,
                       style: GoogleFonts.plusJakartaSans(fontSize: 14),
                       decoration: InputDecoration(
-                        labelText: 'Full Name *',
+                        labelText: t.fullName,
                         prefixIcon: Padding(
                           padding: const EdgeInsets.all(12),
                           child: CustomIconWidget(
@@ -709,7 +721,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                       keyboardType: TextInputType.phone,
                       style: GoogleFonts.plusJakartaSans(fontSize: 14),
                       decoration: InputDecoration(
-                        labelText: 'Phone Number *',
+                        labelText: t.phoneNumber,
                         prefixIcon: Padding(
                           padding: const EdgeInsets.all(12),
                           child: CustomIconWidget(
@@ -729,7 +741,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                       maxLines: 3,
                       style: GoogleFonts.plusJakartaSans(fontSize: 14),
                       decoration: InputDecoration(
-                        labelText: 'Bio (optional)',
+                        labelText: t.bioOptional,
                         alignLabelWithHint: true,
                         prefixIcon: Padding(
                           padding: const EdgeInsets.all(12),
@@ -763,7 +775,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                               ),
                             )
                           : Text(
-                              'Save Changes',
+                              t.saveChanges,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 15, fontWeight: FontWeight.w600,
                               ),
@@ -781,28 +793,27 @@ class _ProfileBodyState extends State<_ProfileBody> {
 
   // ── Role switch dialog ───────────────────────────────────────────────────
 
-  void _showRoleSwitchDialog(BuildContext context, String targetRole) {
+  void _showRoleSwitchDialog(BuildContext context, String targetRole, AppLocalizations t) {
     final theme = widget.theme;
-    final targetLabel = targetRole == 'landOwner' ? 'Land Owner' : 'Farmer';
+    final targetLabel = targetRole == 'landOwner' ? t.landOwner : t.farmer;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Switch to $targetLabel',
+          '${t.switchTo} $targetLabel',
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
         ),
         content: Text(
-          'You will be switched to the $targetLabel view. '
-          'You can switch back at any time.',
+          t.switchRoleMessage.replaceFirst('यसको', targetLabel).replaceFirst('the', targetLabel),
           style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
-              'Cancel',
+              t.cancel,
               style: GoogleFonts.plusJakartaSans(
                 color: theme.colorScheme.primary,
               ),
@@ -835,7 +846,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
               ),
             ),
             child: Text(
-              'Switch',
+              t.switchLabel,
               style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
             ),
           ),

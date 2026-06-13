@@ -2,8 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { User } from 'firebase/auth';
-import type { AppUser, Land, Application, Conversation, SupportMessage } from '@/lib/types';
-import { SEED_USERS, SEED_LANDS, SEED_APPS, SEED_CONVS, SEED_SUPPORT } from '@/lib/seed';
+import type { AppUser, Land, Application, Conversation, SupportMessage, WalletEntry } from '@/lib/types';
 import { tsToDate } from '@/lib/utils';
 
 interface Toast { msg: string; type: 'success' | 'warning' | 'danger' | 'info'; id: number }
@@ -18,15 +17,18 @@ interface AdminContextType {
   apps: Application[];
   convs: Conversation[];
   supportMsgs: SupportMessage[];
+  wallets: WalletEntry[];
   // Setters
   setUsers: React.Dispatch<React.SetStateAction<AppUser[]>>;
   setLands: React.Dispatch<React.SetStateAction<Land[]>>;
   setApps: React.Dispatch<React.SetStateAction<Application[]>>;
   setConvs: React.Dispatch<React.SetStateAction<Conversation[]>>;
   setSupportMsgs: React.Dispatch<React.SetStateAction<SupportMessage[]>>;
+  setWallets: React.Dispatch<React.SetStateAction<WalletEntry[]>>;
   // Toast
   toasts: Toast[];
   showToast: (msg: string, type?: Toast['type']) => void;
+  removeToast: (id: number) => void;
   // Firebase loaders
   loadAllFirebase: () => Promise<void>;
 }
@@ -36,33 +38,46 @@ const AdminContext = createContext<AdminContextType | null>(null);
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [authUser, setAuthUser]         = useState<User | null>(null);
   const [firebaseReady, setFirebaseReady] = useState(false);
-  const [users,       setUsers]         = useState<AppUser[]>(SEED_USERS);
-  const [lands,       setLands]         = useState<Land[]>(SEED_LANDS);
-  const [apps,        setApps]          = useState<Application[]>(SEED_APPS);
-  const [convs,       setConvs]         = useState<Conversation[]>(SEED_CONVS);
-  const [supportMsgs, setSupportMsgs]   = useState<SupportMessage[]>(SEED_SUPPORT);
+  const [users,       setUsers]         = useState<AppUser[]>([]);
+  const [lands,       setLands]         = useState<Land[]>([]);
+  const [apps,        setApps]          = useState<Application[]>([]);
+  const [convs,       setConvs]         = useState<Conversation[]>([]);
+  const [supportMsgs, setSupportMsgs]   = useState<SupportMessage[]>([]);
+  const [wallets,     setWallets]       = useState<WalletEntry[]>([]);
   const [toasts,      setToasts]        = useState<Toast[]>([]);
   const toastCounter = useRef(0);
 
   const showToast = useCallback((msg: string, type: Toast['type'] = 'success') => {
     const id = ++toastCounter.current;
     setToasts(prev => [...prev, { msg, type, id }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500);
+  }, []);
+
+  const removeToast = useCallback((id: number) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
   useEffect(() => {
     // Dynamically import firebase to avoid SSR issues
+    let unsubAuth: (() => void) | undefined;
     import('@/lib/firebase').then(({ onAuth }) => {
       setFirebaseReady(true);
-      const unsub = onAuth(u => setAuthUser(u));
-      return unsub;
+      unsubAuth = onAuth(u => setAuthUser(u));
     });
+    return () => { unsubAuth?.(); };
   }, []);
 
   const loadAllFirebase = useCallback(async () => {
-    if (!firebaseReady) return;
     try {
-      const { db, getDocs, collection } = await import('@/lib/firebase');
+      const { db, getDocs, collection, auth } = await import('@/lib/firebase');
+
+      // Wait for auth to be confirmed — admin rules require authentication
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.warn('[Admin] loadAllFirebase: no authenticated user, skipping');
+        return;
+      }
+      console.log('[Admin] Loading data for uid:', currentUser.uid);
 
       // Load users
       const uSnap = await getDocs(collection(db, 'users'));
@@ -74,6 +89,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
             name:         v.name || v.displayName || 'Unknown',
             email:        v.email || '',
             phone:        v.phone || v.phoneNumber || '',
+            photoUrl:     v.photoUrl || v.profileImage || null,
             role:         v.role || 'farmer',
             kycStatus:    v.kycStatus || 'pending',
             kycDocuments: v.kycDocuments || null,
@@ -82,7 +98,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
             joined:       tsToDate(v.createdAt),
           };
         }));
-        showToast('Users loaded from Firebase', 'success');
+        showToast(`${uSnap.docs.length} users loaded`, 'success');
       }
 
       // Load lands
@@ -163,18 +179,60 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         loaded.sort((a, b) => b.ts - a.ts);
         setConvs(loaded);
       });
+
+      // Load wallet balances for all users
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const walletEntries: import('@/lib/types').WalletEntry[] = [];
+      await Promise.all(
+        usersSnap.docs.map(async userDoc => {
+          try {
+            const u = userDoc.data();
+            const balDoc = await import('@/lib/firebase').then(({ getDoc, doc: fsDoc }) =>
+              getDoc(fsDoc(db, 'users', userDoc.id, 'wallet', 'balance'))
+            );
+            const balance = balDoc.exists()
+              ? ((balDoc.data() as Record<string, unknown>)['balance'] as number ?? 0)
+              : 0;
+
+            const txSnap = await getDocs(collection(db, `users/${userDoc.id}/walletTransactions`));
+            const transactions = txSnap.docs.map(d => {
+              const t = d.data();
+              return {
+                id:          d.id,
+                amount:      (t['amount'] as number) || 0,
+                type:        (t['type'] as 'credit' | 'debit') || 'credit',
+                description: (t['description'] as string) || '',
+                createdAt:   tsToDate(t['createdAt']),
+                ts:          t['createdAt']?.seconds ? t['createdAt'].seconds * 1000 : 0,
+              };
+            });
+            transactions.sort((a, b) => b.ts - a.ts);
+
+            walletEntries.push({
+              userId:    userDoc.id,
+              userName:  u['name'] || u['displayName'] || 'Unknown',
+              userEmail: u['email'] || '',
+              userPhoto: u['photoUrl'] || u['profileImage'] || null,
+              balance,
+              transactions,
+            });
+          } catch { /* skip users without wallets */ }
+        })
+      );
+      walletEntries.sort((a, b) => b.balance - a.balance);
+      setWallets(walletEntries);
     } catch (e) {
       console.warn('[Admin] loadAllFirebase:', (e as Error).message);
-      showToast('Running on demo data', 'info');
+      showToast('Could not load data from Firebase', 'danger');
     }
-  }, [firebaseReady, showToast]);
+  }, [showToast]);
 
   return (
     <AdminContext.Provider value={{
       authUser, firebaseReady,
-      users, lands, apps, convs, supportMsgs,
-      setUsers, setLands, setApps, setConvs, setSupportMsgs,
-      toasts, showToast,
+      users, lands, apps, convs, supportMsgs, wallets,
+      setUsers, setLands, setApps, setConvs, setSupportMsgs, setWallets,
+      toasts, showToast, removeToast,
       loadAllFirebase,
     }}>
       {children}
