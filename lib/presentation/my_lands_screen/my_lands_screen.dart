@@ -2483,395 +2483,382 @@ class _LandFormSheetState extends State<_LandFormSheet> {
     final theme = Theme.of(context);
     final t = AppLocalizations.of(context);
     final isNepali = LanguageController.instance.isNepali;
+    final maxH = MediaQuery.of(context).size.height * 0.92;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
+
     return Container(
+      constraints: BoxConstraints(maxHeight: maxH),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(
-        24,
-        16,
-        24,
-        MediaQuery.of(context).viewInsets.bottom + 32,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.outline.withAlpha(70),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Header
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Fixed header ─────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36, height: 4,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(10),
+                      color: theme.colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    child: Center(
-                      child: CustomIconWidget(
-                        iconName: _isEditing ? 'edit' : 'add_location_alt',
-                        color: AppTheme.primary,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    _isEditing ? t.editListing : t.listYourLand,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Land Title
-              _FieldLabel(t.landTitle),
-              TextFormField(
-                controller: _titleCtrl,
-                style: GoogleFonts.plusJakartaSans(fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: t.landTitleHint,
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.only(left: 12, right: 8),
-                    child: CustomIconWidget(
-                      iconName: 'landscape',
-                      color: AppTheme.primary,
-                      size: 18,
-                    ),
-                  ),
-                  prefixIconConstraints: const BoxConstraints(
-                    minWidth: 0,
-                    minHeight: 0,
                   ),
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? t.titleRequired : null,
-              ),
-              const SizedBox(height: 14),
-
-              // Province + District row
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldLabel(t.province),
-                        _DropdownField<Province>(
-                          value: _selectedProvince,
-                          items: _locationData?.provinceList ?? [],
-                          itemLabel: (province) => 
-                              isNepali && (province.nameNp?.isNotEmpty ?? false)
-                              ? province.nameNp! 
-                              : province.nameEn,
-                          onChanged: (v) => setState(() {
-                            _selectedProvince = v;
-                            _selectedDistrict = null;
-                            _selectedMunicipality = null;
-                          }),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldLabel(t.district),
-                        _DropdownField<District>(
-                          value: _selectedDistrict,
-                          items: _selectedProvince?.districtList ?? [],
-                          itemLabel: (district) => 
-                              isNepali && (district.nameNp?.isNotEmpty ?? false)
-                              ? district.nameNp! 
-                              : district.nameEn,
-                          onChanged: (v) => setState(() {
-                            _selectedDistrict = v;
-                            _selectedMunicipality = null;
-                          }),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // Municipality
-              _FieldLabel(t.municipality),
-              _DropdownField<Municipality>(
-                value: _selectedMunicipality,
-                items: _selectedDistrict?.municipalityList ?? [],
-                itemLabel: (municipality) => 
-                    isNepali && (municipality.nameNp?.isNotEmpty ?? false)
-                    ? municipality.nameNp! 
-                    : municipality.nameEn,
-                onChanged: (v) => setState(() => _selectedMunicipality = v),
-              ),
-              const SizedBox(height: 14),
-
-              // Area + Price row
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldLabel('Area (Ropani) *'),
-                        TextFormField(
-                          controller: _areaCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d*\.?\d*'),
-                            ),
-                          ],
-                          style: GoogleFonts.plusJakartaSans(fontSize: 14),
-                          decoration:
-                              const InputDecoration(hintText: 'e.g. 12.5'),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty)
-                              return 'Required';
-                            if (double.tryParse(v) == null) return 'Invalid';
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldLabel('Lease/Month (NPR) *'),
-                        TextFormField(
-                          controller: _priceCtrl,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          style: GoogleFonts.plusJakartaSans(fontSize: 14),
-                          decoration:
-                              const InputDecoration(hintText: 'e.g. 8500'),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty)
-                              return 'Required';
-                            if (double.tryParse(v) == null) return 'Invalid';
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // Soil + Water row
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldLabel('Soil Type'),
-                        _DropdownField<String>(
-                          value: _soilType,
-                          items: _soilTypes,
-                          onChanged: (v) => setState(() => _soilType = v!),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldLabel('Water Source'),
-                        _DropdownField<String>(
-                          value: _waterSource,
-                          items: _waterSources,
-                          onChanged: (v) => setState(() => _waterSource = v!),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // Category
-              _FieldLabel('Land Category'),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _categories.map((cat) {
-                  final isSelected = cat == _category;
-                  return GestureDetector(
-                    onTap: () => setState(() => _category = cat),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.primary
-                            : theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppTheme.primary
-                              : theme.colorScheme.outlineVariant,
-                        ),
-                      ),
-                      child: Text(
-                        cat,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected
-                              ? Colors.white
-                              : theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 14),
-
-              // Irrigation toggle
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
+                const SizedBox(height: 14),
+                Row(
                   children: [
-                    CustomIconWidget(
-                      iconName: 'water_drop',
-                      color: AppTheme.info,
-                      size: 18,
+                    Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: CustomIconWidget(
+                          iconName: _isEditing ? 'edit' : 'add_location_alt',
+                          color: AppTheme.primary,
+                          size: 20,
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Irrigation Available',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                      child: Text(
+                        _isEditing ? t.editListing : t.listYourLand,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Divider(height: 1, color: theme.colorScheme.outlineVariant),
+              ],
+            ),
+          ),
+
+          // ── Scrollable form ───────────────────────────────────────────────
+          Flexible(
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Title
+                    _FieldLabel(t.landTitle),
+                    TextFormField(
+                      controller: _titleCtrl,
+                      style: GoogleFonts.plusJakartaSans(fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: t.landTitleHint,
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.only(left: 12, right: 8),
+                          child: CustomIconWidget(
+                            iconName: 'landscape',
+                            color: AppTheme.primary,
+                            size: 18,
+                          ),
+                        ),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 0, minHeight: 0,
+                        ),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? t.titleRequired
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Province
+                    _FieldLabel(t.province),
+                    _DropdownField<Province>(
+                      value: _selectedProvince,
+                      items: _locationData?.provinceList ?? [],
+                      itemLabel: (p) =>
+                          isNepali && (p.nameNp?.isNotEmpty ?? false)
+                              ? p.nameNp!
+                              : p.nameEn,
+                      onChanged: (v) => setState(() {
+                        _selectedProvince = v;
+                        _selectedDistrict = null;
+                        _selectedMunicipality = null;
+                      }),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // District
+                    _FieldLabel(t.district),
+                    _DropdownField<District>(
+                      value: _selectedDistrict,
+                      items: _selectedProvince?.districtList ?? [],
+                      itemLabel: (d) =>
+                          isNepali && (d.nameNp?.isNotEmpty ?? false)
+                              ? d.nameNp!
+                              : d.nameEn,
+                      onChanged: (v) => setState(() {
+                        _selectedDistrict = v;
+                        _selectedMunicipality = null;
+                      }),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Municipality
+                    _FieldLabel(t.municipality),
+                    _DropdownField<Municipality>(
+                      value: _selectedMunicipality,
+                      items: _selectedDistrict?.municipalityList ?? [],
+                      itemLabel: (m) =>
+                          isNepali && (m.nameNp?.isNotEmpty ?? false)
+                              ? m.nameNp!
+                              : m.nameEn,
+                      onChanged: (v) =>
+                          setState(() => _selectedMunicipality = v),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Area
+                    _FieldLabel('${t.areaRopani} *'),
+                    TextFormField(
+                      controller: _areaCtrl,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d*\.?\d*')),
+                      ],
+                      style: GoogleFonts.plusJakartaSans(fontSize: 14),
+                      decoration:
+                          const InputDecoration(hintText: 'e.g. 12.5'),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Required';
+                        if (double.tryParse(v) == null) return 'Invalid number';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Lease price
+                    _FieldLabel('${t.leasePerMonth} *'),
+                    TextFormField(
+                      controller: _priceCtrl,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      style: GoogleFonts.plusJakartaSans(fontSize: 14),
+                      decoration:
+                          const InputDecoration(hintText: 'e.g. 8500'),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Required';
+                        if (double.tryParse(v) == null) return 'Invalid number';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Soil type
+                    _FieldLabel(t.soilType),
+                    _DropdownField<String>(
+                      value: _soilType,
+                      items: _soilTypes,
+                      onChanged: (v) => setState(() => _soilType = v!),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Water source
+                    _FieldLabel(t.waterSource),
+                    _DropdownField<String>(
+                      value: _waterSource,
+                      items: _waterSources,
+                      onChanged: (v) => setState(() => _waterSource = v!),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Category
+                    _FieldLabel(t.landCategory),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _categories.map((cat) {
+                        final isSelected = cat == _category;
+                        return GestureDetector(
+                          onTap: () => setState(() => _category = cat),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppTheme.primary
+                                  : theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppTheme.primary
+                                    : theme.colorScheme.outlineVariant,
+                              ),
+                            ),
+                            child: Text(
+                              cat,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : theme.colorScheme.onSurface,
+                              ),
                             ),
                           ),
-                          Text(
-                            'Land has irrigation infrastructure',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
-                              color: theme.colorScheme.outline,
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Irrigation
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          CustomIconWidget(
+                            iconName: 'water_drop',
+                            color: AppTheme.info,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  t.irrigationAvailable,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  t.hasIrrigationSub,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                ),
+                              ],
                             ),
+                          ),
+                          Switch(
+                            value: _hasIrrigation,
+                            onChanged: (v) =>
+                                setState(() => _hasIrrigation = v),
+                            activeColor: AppTheme.primary,
                           ),
                         ],
                       ),
                     ),
-                    Switch(
-                      value: _hasIrrigation,
-                      onChanged: (v) => setState(() => _hasIrrigation = v),
-                      activeColor: AppTheme.primary,
+                    const SizedBox(height: 14),
+
+                    // Cover photo
+                    _FieldLabel(t.coverPhoto),
+                    GestureDetector(
+                      onTap: _isUploadingImage ? null : _pickImage,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        height: 150,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: _uploadedImageUrl.isNotEmpty
+                                ? AppTheme.primary
+                                : theme.colorScheme.outlineVariant,
+                            width: _uploadedImageUrl.isNotEmpty ? 2 : 1,
+                          ),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: _buildImagePickerContent(),
+                      ),
                     ),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
-
-              // ── Image Picker ──────────────────────────────────────────────
-              _FieldLabel('Cover Photo'),
-              GestureDetector(
-                onTap: _isUploadingImage ? null : _pickImage,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: 160,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: _uploadedImageUrl.isNotEmpty
-                          ? AppTheme.primary
-                          : Theme.of(context).colorScheme.outlineVariant,
-                      width: _uploadedImageUrl.isNotEmpty ? 2 : 1,
-                    ),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: _buildImagePickerContent(),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Save button
-              SizedBox(
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          _isEditing ? 'Save Changes' : 'Submit Listing',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+
+          // ── Pinned submit button ──────────────────────────────────────────
+          Container(
+            padding: EdgeInsets.fromLTRB(20, 12, 20, safeBottom + 16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              border: Border(
+                top: BorderSide(
+                  color: theme.colorScheme.outlineVariant,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: SizedBox(
+              height: 52,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _save,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CustomIconWidget(
+                            iconName:
+                                _isEditing ? 'save' : 'check_circle',
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _isEditing
+                                ? t.saveChanges
+                                : t.submitListing,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

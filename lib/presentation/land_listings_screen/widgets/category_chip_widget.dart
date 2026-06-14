@@ -175,33 +175,22 @@ class CategoryChipWidget extends StatelessWidget {
 
   String _iconForCategory(String cat) {
     switch (cat) {
-      case 'Paddy':
-        return 'grass';
-      case 'Vegetable':
-        return 'eco';
-      case 'Orchard':
-        return 'park';
-      case 'Pasture':
-        return 'terrain';
-      default:
-        return 'apps';
+      case 'Paddy':     return 'grass';
+      case 'Vegetable': return 'eco';
+      case 'Orchard':   return 'park';
+      case 'Pasture':   return 'terrain';
+      default:          return 'apps';
     }
   }
 
   String _getTranslatedCategory(String cat, AppLocalizations t) {
     switch (cat) {
-      case 'All':
-        return t.allCategories;
-      case 'Paddy':
-        return t.paddy;
-      case 'Vegetable':
-        return t.vegetable;
-      case 'Orchard':
-        return t.orchard;
-      case 'Pasture':
-        return t.pasture;
-      default:
-        return cat;
+      case 'All':       return t.allCategories;
+      case 'Paddy':     return t.paddy;
+      case 'Vegetable': return t.vegetable;
+      case 'Orchard':   return t.orchard;
+      case 'Pasture':   return t.pasture;
+      default:          return cat;
     }
   }
 

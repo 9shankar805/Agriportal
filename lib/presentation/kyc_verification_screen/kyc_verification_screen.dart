@@ -44,8 +44,78 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   bool _uploadingBack    = false;
   bool _uploadingSelfie  = false;
 
+  bool _isLoading    = true;   // loading existing status
   bool _isSubmitted  = false;
   bool _isSubmitting = false;
+  String _kycStatus  = '';     // 'pending' | 'verified' | 'rejected' | ''
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingKycStatus();
+  }
+
+  /// Fetch the user's current KYC status from Firestore.
+  /// If already pending/verified, skip the form.
+  /// If rejected or empty, show the form (pre-fill existing data if any).
+  Future<void> _loadExistingKycStatus() async {
+    final uid = UserSession.instance.uid;
+    if (uid.isEmpty) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+    try {
+      // Force server fetch so we never read stale cached data
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get(const GetOptions(source: Source.server));
+
+      final data = snap.data();
+      if (!mounted) return;
+
+      debugPrint('[KYC] raw data: $data');
+
+      final status = data?['kycStatus'] as String? ?? '';
+      debugPrint('[KYC] kycStatus = "$status"');
+
+      _kycStatus = status;
+
+      // Pre-fill form fields from existing Firestore data
+      final name  = data?['name']  as String? ?? '';
+      final phone = data?['phone'] as String? ?? '';
+      if (name.isNotEmpty)  _nameCtrl.text  = name;
+      if (phone.isNotEmpty) _phoneCtrl.text = phone;
+
+      final address = data?['kycAddress'] as Map<String, dynamic>?;
+      if (address != null) {
+        _streetCtrl.text     = address['street']      as String? ?? '';
+        _cityCtrl.text       = address['city']        as String? ?? '';
+        _districtCtrl.text   = address['district']    as String? ?? '';
+        _provinceCtrl.text   = address['province']    as String? ?? '';
+        _wardCtrl.text       = address['ward']        as String? ?? '';
+        _occupationCtrl.text = address['occupation']  as String? ?? '';
+        _dobCtrl.text        = address['dateOfBirth'] as String? ?? '';
+      }
+
+      final docs = data?['kycDocuments'] as Map<String, dynamic>?;
+      if (docs != null) {
+        _frontUrl  = docs['citizenshipFront'] as String?;
+        _backUrl   = docs['citizenshipBack']  as String?;
+        _selfieUrl = docs['selfie']           as String?;
+      }
+
+      // Show status screen for pending or verified
+      if (status == 'pending' || status == 'verified') {
+        _isSubmitted = true;
+      }
+
+      setState(() => _isLoading = false);
+    } catch (e, stack) {
+      debugPrint('[KYC] _loadExistingKycStatus error: $e\n$stack');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -162,7 +232,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           'selfie':           _selfieUrl!,
         },
       );
-      if (mounted) setState(() { _isSubmitted = true; _isSubmitting = false; });
+      if (mounted) setState(() { _isSubmitted = true; _isSubmitting = false; _kycStatus = 'pending'; });
     } catch (e) {
       if (mounted) {
         _showSnack('Submission error: $e', isError: true);
@@ -213,13 +283,34 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           ),
         ),
       ),
-      body: _isSubmitted ? _buildSuccess(theme) : _buildForm(theme),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _isSubmitted
+              ? _buildStatus(theme)
+              : _buildForm(theme),
     );
   }
 
-  // ── Success state ───────────────────────────────────────────────────────
+  // ── Status screen (pending / verified / rejected) ───────────────────────
 
-  Widget _buildSuccess(ThemeData theme) {
+  Widget _buildStatus(ThemeData theme) {
+    final isVerified = _kycStatus == 'verified';
+    final isRejected = _kycStatus == 'rejected';
+
+    final iconName  = isVerified ? 'verified_user'   : 'hourglass_top';
+    final iconColor = isVerified ? Colors.green       : theme.colorScheme.primary;
+    final bgColor   = isVerified
+        ? Colors.green.withAlpha(30)
+        : theme.colorScheme.primaryContainer;
+    final title     = isVerified
+        ? 'KYC Verified ✓'
+        : 'Submitted for Review';
+    final subtitle  = isVerified
+        ? 'Your identity has been verified. You can now apply for land listings and message land owners.'
+        : 'Your KYC documents have been uploaded and submitted. Our admin team will verify your documents within 1–2 business days.';
+    final badgeText = isVerified ? 'Verified' : 'Under Review';
+    final badgeColor = isVerified ? Colors.green : theme.colorScheme.primary;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -228,67 +319,75 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           children: [
             Container(
               width: 80, height: 80,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
               child: Center(
-                child: CustomIconWidget(
-                  iconName: 'hourglass_top',
-                  color: theme.colorScheme.primary,
-                  size: 36,
-                ),
+                child: CustomIconWidget(iconName: iconName, color: iconColor, size: 36),
               ),
             ),
             const SizedBox(height: 24),
             Text(
-              'Submitted for Review',
+              title,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+                fontSize: 20, fontWeight: FontWeight.w700,
                 color: theme.colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
-              'Your KYC documents and photos have been uploaded and submitted. Our admin team will verify your documents within 1–2 business days.',
+              subtitle,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
-                color: theme.colorScheme.outline,
-                height: 1.6,
+                fontSize: 14, color: theme.colorScheme.outline, height: 1.6,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
+            // Status badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withAlpha(120),
-                borderRadius: BorderRadius.circular(10),
+                color: badgeColor.withAlpha(20),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: badgeColor.withAlpha(80)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CustomIconWidget(
-                    iconName: 'info_outline',
-                    color: theme.colorScheme.primary,
-                    size: 16,
+                    iconName: isVerified ? 'check_circle' : 'schedule',
+                    color: badgeColor, size: 14,
                   ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      'You can apply for land once approved.',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: theme.colorScheme.primary,
-                      ),
+                  const SizedBox(width: 6),
+                  Text(
+                    badgeText,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13, fontWeight: FontWeight.w600,
+                      color: badgeColor,
                     ),
                   ),
                 ],
               ),
             ),
+            // Allow resubmission if rejected
+            if (isRejected) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: () => setState(() {
+                    _isSubmitted = false;
+                    _kycStatus   = '';
+                  }),
+                  child: Text(
+                    'Resubmit KYC',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14, fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

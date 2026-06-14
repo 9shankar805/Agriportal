@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -26,14 +27,16 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Set user presence online
-    RealtimeChatService.instance.setOnline();
+    // Only set presence once auth is confirmed
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      RealtimeChatService.instance.setOnline();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final myUid = UserSession.instance.uid;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -60,7 +63,23 @@ class _ChatScreenState extends State<ChatScreen> {
           SizedBox(width: 1.w),
         ],
       ),
-      body: Column(
+      body: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, authSnap) {
+          // Still waiting for auth to restore
+          if (authSnap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final firebaseUser = authSnap.data;
+          final myUid = firebaseUser?.uid ?? '';
+
+          // Set presence now that we know auth is ready
+          if (myUid.isNotEmpty) {
+            RealtimeChatService.instance.setOnline();
+          }
+
+          return Column(
         children: [
           // Search bar
           Padding(
@@ -168,8 +187,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
           ),
         ],
-      ),
-    );
+          );  // Column
+        },  // StreamBuilder builder
+      ),    // StreamBuilder
+    );      // Scaffold
   }
 }
 
