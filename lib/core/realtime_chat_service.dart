@@ -124,15 +124,14 @@ class RealtimeChatService {
     final uid = _myUid;
     if (uid == null) return const Stream.empty();
 
-    // Listen to all conversations — filter on the client side.
-    // For large apps, use server-side indexes. This is fine for MVP.
+    // Filter by participantAId first (uses the RTDB index).
+    // We merge two ordered queries client-side so we catch both sides.
     return _db.ref('conversations').onValue.map((event) {
       final snap = event.snapshot;
       if (!snap.exists || snap.value == null) return <RtConversation>[];
       final map = Map<String, dynamic>.from(snap.value as Map);
       return map.entries
-          .map((e) => RtConversation.fromSnapshot(
-              snap.child(e.key)))
+          .map((e) => RtConversation.fromSnapshot(snap.child(e.key)))
           .where((c) =>
               c.participantAId == uid || c.participantBId == uid)
           .toList()

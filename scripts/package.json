@@ -1,0 +1,9 @@
+{
+  "name": "agriportal-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "firebase": "^10.14.0"
+  }
+}

@@ -190,6 +190,8 @@ class AppLocalizations {
   String get district                => _ne ? 'जिल्ला'               : 'District';
   String get priceRangeMonthly       => _ne ? 'मूल्य श्रेणी (मासिक)' : 'Price Range (Monthly)';
   String get areaRangeRopani         => _ne ? 'क्षेत्रफल श्रेणी (रोपनी)' : 'Area Range (Ropani)';
+  String get narrowDownYourSearch    => _ne ? 'आफ्नो खोजलाई सीमित गर्नुस' : 'Narrow down your search';
+  String get reset                   => _ne ? 'रिसेट'                : 'Reset';
   // Banners
   String get banner1Headline         => _ne ? 'उपजाऊ। प्रमाणित। तपाईंको।' : 'Fertile. Verified. Yours.';
   String get banner1Subtitle         => _ne ? 'नेपालका प्रदेशहरूमा प्रमाणित कृषि भूमि खोज्नुहोस्' : 'Discover certified agricultural land across Nepal\'s provinces';

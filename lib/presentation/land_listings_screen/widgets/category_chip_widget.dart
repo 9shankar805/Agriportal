@@ -20,33 +20,22 @@ class CategoryChipWidget extends StatelessWidget {
 
   String _iconForCategory(String cat) {
     switch (cat) {
-      case 'Paddy':
-        return 'grass';
-      case 'Vegetable':
-        return 'eco';
-      case 'Orchard':
-        return 'park';
-      case 'Pasture':
-        return 'terrain';
-      default:
-        return 'apps';
+      case 'Paddy':     return 'grass';
+      case 'Vegetable': return 'eco';
+      case 'Orchard':   return 'park';
+      case 'Pasture':   return 'terrain';
+      default:          return 'apps';
     }
   }
 
   String _getTranslatedCategory(String cat, AppLocalizations t) {
     switch (cat) {
-      case 'All':
-        return t.allCategories;
-      case 'Paddy':
-        return t.paddy;
-      case 'Vegetable':
-        return t.vegetable;
-      case 'Orchard':
-        return t.orchard;
-      case 'Pasture':
-        return t.pasture;
-      default:
-        return cat;
+      case 'All':       return t.allCategories;
+      case 'Paddy':     return t.paddy;
+      case 'Vegetable': return t.vegetable;
+      case 'Orchard':   return t.orchard;
+      case 'Pasture':   return t.pasture;
+      default:          return cat;
     }
   }
 
@@ -54,77 +43,66 @@ class CategoryChipWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final t = AppLocalizations.of(context);
+
     return SizedBox(
-      height: 88,
+      height: 44,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final cat = categories[index];
           final isSelected = cat == selected;
-          return InkWell(
+
+          return GestureDetector(
             onTap: () => onSelected(cat),
-            borderRadius: BorderRadius.circular(14),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 180),
               curve: Curves.easeOutCubic,
-              width: 70,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppTheme.primaryContainer
+                    ? AppTheme.primary
                     : theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: isSelected
                       ? AppTheme.primary
                       : theme.colorScheme.outlineVariant,
-                  width: isSelected ? 1.5 : 1,
+                  width: 1,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(10),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppTheme.primary.withAlpha(55),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : [],
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppTheme.primary
-                          : theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Center(
-                      child: CustomIconWidget(
-                        iconName: _iconForCategory(cat),
-                        color: isSelected
-                            ? Colors.white
-                            : theme.colorScheme.onSurfaceVariant,
-                        size: 18,
-                      ),
-                    ),
+                  CustomIconWidget(
+                    iconName: _iconForCategory(cat),
+                    color: isSelected
+                        ? Colors.white
+                        : theme.colorScheme.onSurfaceVariant,
+                    size: 14,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(width: 6),
                   Text(
                     _getTranslatedCategory(cat, t),
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
+                      fontSize: 12,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected
-                          ? AppTheme.primary
+                          ? Colors.white
                           : theme.colorScheme.onSurface,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

@@ -195,10 +195,13 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                     ),
                   ),
                   SliverToBoxAdapter(
-                    child: CategoryChipWidget(
-                      categories: _categories,
-                      selected: _selectedCategory,
-                      onSelected: _onCategorySelected,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: CategoryChipWidget(
+                        categories: _categories,
+                        selected: _selectedCategory,
+                        onSelected: _onCategorySelected,
+                      ),
                     ),
                   ),
                   SliverToBoxAdapter(
@@ -210,7 +213,7 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                   // Recommended section header
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                       child: Text(
                         t.recommendedLands,
                         style: GoogleFonts.plusJakartaSans(
@@ -255,7 +258,7 @@ class _LandListingsScreenState extends State<LandListingsScreen> {
                   // All listings header
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [

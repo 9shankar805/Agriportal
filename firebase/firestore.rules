@@ -17,10 +17,8 @@ service cloud.firestore {
     }
 
     // ── Users ─────────────────────────────────────────────────────────────
-    // Any signed-in user can read any user profile (needed for chat, listings)
-    // Only the owner or an admin can write their own profile
     match /users/{uid} {
-      allow read:  if isSignedIn();
+      allow read:   if isSignedIn();
       allow create: if isOwner(uid);
       allow update: if isOwner(uid) || isAdmin();
       allow delete: if isAdmin();
@@ -28,7 +26,7 @@ service cloud.firestore {
       // Per-user notifications sub-collection
       match /notifications/{notifId} {
         allow read:   if isOwner(uid);
-        allow create: if isSignedIn(); // service writes notifications on behalf of others
+        allow create: if isSignedIn();
         allow update: if isOwner(uid);
         allow delete: if isOwner(uid);
       }
@@ -37,13 +35,21 @@ service cloud.firestore {
       match /savedLands/{landId} {
         allow read, write: if isOwner(uid);
       }
+
+      // Per-user wallet balance doc
+      match /wallet/{docId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Per-user wallet transactions sub-collection
+      match /walletTransactions/{txnId} {
+        allow read, write: if isOwner(uid);
+      }
     }
 
     // ── Land Listings ─────────────────────────────────────────────────────
-    // Anyone signed in can read active/approved/pending lands
-    // Only the land owner can create/update/delete their own listing
     match /lands/{landId} {
-      allow read: if isSignedIn();
+      allow read:   if isSignedIn();
       allow create: if isSignedIn() &&
                     request.resource.data.ownerId == request.auth.uid;
       allow update: if isSignedIn() &&
@@ -53,9 +59,6 @@ service cloud.firestore {
     }
 
     // ── Applications ──────────────────────────────────────────────────────
-    // Applicant can read/create their own applications
-    // Land owner can read applications for their lands
-    // Admin can read/update all
     match /applications/{appId} {
       allow read: if isSignedIn() && (
         resource.data.applicantId == request.auth.uid ||
@@ -64,21 +67,20 @@ service cloud.firestore {
       );
       allow create: if isSignedIn() &&
                     request.resource.data.applicantId == request.auth.uid;
-      allow update: if isSignedIn() && (
-        resource.data.ownerId == request.auth.uid || isAdmin()
-      );
+      allow update: if isSignedIn() &&
+                    (resource.data.ownerId == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
 
     // ── Admins ────────────────────────────────────────────────────────────
-    // Only admins can read/write the admins collection
+    // Non-admins need read access so isAdmin() can resolve without
+    // a recursive permission-denied error for regular users.
     match /admins/{uid} {
-      allow read:  if isAdmin();
+      allow read:  if isSignedIn();
       allow write: if isAdmin();
     }
 
     // ── Support Messages ──────────────────────────────────────────────────
-    // Any signed-in user can submit; only admins can read all
     match /supportMessages/{msgId} {
       allow create: if isSignedIn();
       allow read:   if isAdmin();
