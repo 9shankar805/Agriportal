@@ -4,12 +4,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/app_export.dart';
 import '../../../core/app_localizations.dart';
+import '../../../core/firestore_service.dart';
+import '../../../core/realtime_chat_service.dart';
+import '../../../core/user_session.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_icon_widget.dart';
+import '../../chat_screen/chat_screen.dart';
 import '../../land_listings_screen/land_listings_screen.dart';
 
-class OwnerContactWidget extends StatelessWidget {
+class OwnerContactWidget extends StatefulWidget {
   final LandModel land;
   // true once farmer's application is approved — reveals full contact
   final bool isContactRevealed;
@@ -23,17 +27,129 @@ class OwnerContactWidget extends StatelessWidget {
   });
 
   @override
+  State<OwnerContactWidget> createState() => _OwnerContactWidgetState();
+}
+
+class _OwnerContactWidgetState extends State<OwnerContactWidget> {
+  bool _loadingChat = false;
+
+  /// Opens a conversation with the land owner.
+  /// Checks KYC first, then creates / retrieves the RTDB conversation,
+  /// then pushes straight into ChatDetailScreen.
+  Future<void> _openChat() async {
+    final myUid = UserSession.instance.uid;
+    if (myUid.isEmpty) {
+      context.push(AppRoutes.signUpLogin);
+      return;
+    }
+
+    // Prevent chatting with yourself (land owner viewing their own listing)
+    if (myUid == widget.ownerId) return;
+
+    // KYC gate — same pattern as the apply flow
+    final userData = await FirestoreService.instance.getUser(myUid);
+    final kycStatus = userData?['kycStatus'] as String? ?? 'pending';
+
+    if (!mounted) return;
+
+    if (kycStatus != 'verified') {
+      final isNotStarted = kycStatus != 'pending';
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(
+            'KYC Verification Required',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          ),
+          content: Text(
+            isNotStarted
+                ? 'You need to complete KYC verification before messaging a land owner. Tap below to start.'
+                : 'Your KYC is under review. You can message owners once our admin team approves your documents (1–2 business days).',
+            style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            if (isNotStarted)
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.push(AppRoutes.kycVerification);
+                },
+                child: const Text('Verify KYC'),
+              ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    setState(() => _loadingChat = true);
+    try {
+      final convId = await RealtimeChatService.instance.getOrCreateConversation(
+        otherUid:   widget.ownerId,
+        otherName:  widget.land.ownerName,
+        landId:     widget.land.id,
+        landTitle:  widget.land.title,
+      );
+
+      // Build a minimal RtConversation so ChatDetailScreen can render immediately
+      // without waiting for another RTDB fetch.
+      final myIds = [myUid, widget.ownerId]..sort();
+      final conv = RtConversation(
+        id:                    convId,
+        participantAId:        myIds[0],
+        participantBId:        myIds[1],
+        participantAName:      myIds[0] == myUid
+            ? (UserSession.instance.displayName)
+            : widget.land.ownerName,
+        participantBName:      myIds[0] == myUid
+            ? widget.land.ownerName
+            : (UserSession.instance.displayName),
+        landId:                widget.land.id,
+        landTitle:             widget.land.title,
+        lastMessage:           '',
+        lastMessageTimestamp:  DateTime.now().millisecondsSinceEpoch,
+        unreadCountA:          0,
+        unreadCountB:          0,
+      );
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatDetailScreen(
+              conversation: conv,
+              myUid: myUid,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open chat: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingChat = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
     // Show first name only before approval; full name after
-    final displayName = isContactRevealed
-        ? land.ownerName
-        : '${land.ownerName.split(' ').first} ••••';
+    final displayName = widget.isContactRevealed
+        ? widget.land.ownerName
+        : '${widget.land.ownerName.split(' ').first} ••••';
 
-    final initial = land.ownerName.isNotEmpty
-        ? land.ownerName[0].toUpperCase()
+    final initial = widget.land.ownerName.isNotEmpty
+        ? widget.land.ownerName[0].toUpperCase()
         : 'O';
 
     return Container(
@@ -67,7 +183,7 @@ class OwnerContactWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              if (land.isVerified)
+              if (widget.land.isVerified)
                 Positioned(
                   bottom: 0,
                   right: 0,
@@ -94,7 +210,7 @@ class OwnerContactWidget extends StatelessWidget {
           // ── Owner info ────────────────────────────────────────────────
           Expanded(
             child: GestureDetector(
-              onTap: () => context.push(AppRoutes.publicProfile, extra: ownerId),
+              onTap: () => context.push(AppRoutes.publicProfile, extra: widget.ownerId),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -118,8 +234,8 @@ class OwnerContactWidget extends StatelessWidget {
                       const SizedBox(width: 3),
                       Flexible(
                         child: Text(
-                          land.ownerRating > 0
-                              ? '${land.ownerRating.toStringAsFixed(1)} · ${t.landOwner}'
+                          widget.land.ownerRating > 0
+                              ? '${widget.land.ownerRating.toStringAsFixed(1)} · ${t.landOwner}'
                               : t.landOwner,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
@@ -136,34 +252,43 @@ class OwnerContactWidget extends StatelessWidget {
             ),
           ),
 
-          // ── Contact actions ────────────────────────────────────────────
+          // ── Message button ────────────────────────────────────────────
           GestureDetector(
-            onTap: () => context.go(AppRoutes.chat),
+            onTap: _loadingChat ? null : _openChat,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: AppTheme.primaryContainer,
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CustomIconWidget(
-                    iconName: 'chat_bubble_outline',
-                    color: AppTheme.primary,
-                    size: 13,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    isContactRevealed ? t.message : t.chat,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.primary,
+              child: _loadingChat
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.primary,
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CustomIconWidget(
+                          iconName: 'chat_bubble_outline',
+                          color: AppTheme.primary,
+                          size: 13,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.isContactRevealed ? t.message : t.chat,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ),
         ],

@@ -24,76 +24,14 @@ class ListingsAppBarWidget extends StatelessWidget {
       child: Row(
         children: [
           // ── Brand ────────────────────────────────────────────────────────
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: AppTheme.primary,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Center(
-              child: CustomIconWidget(
-                iconName: 'eco',
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Agri',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                TextSpan(
-                  text: 'Portal',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.primary,
-                  ),
-                ),
-              ],
-            ),
+          Image.asset(
+            'assets/images/homescreen_logo.png',
+            height: 36,
+            width: 109,
+            fit: BoxFit.contain,
           ),
 
           const Spacer(),
-
-          // ── Location chip ─────────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryContainer,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CustomIconWidget(
-                  iconName: 'location_on',
-                  color: AppTheme.primary,
-                  size: 12,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  t.nepal,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 8),
 
           // ── Saved ─────────────────────────────────────────────────────────
           _IconBtn(
