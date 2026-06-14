@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,16 +24,16 @@ class KycVerificationScreen extends StatefulWidget {
 }
 
 class _KycVerificationScreenState extends State<KycVerificationScreen> {
-  final _formKey        = GlobalKey<FormState>();
-  final _nameCtrl       = TextEditingController();
-  final _phoneCtrl      = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   final _occupationCtrl = TextEditingController();
-  final _dobCtrl        = TextEditingController();
-  final _streetCtrl     = TextEditingController();
-  final _cityCtrl       = TextEditingController();
-  final _districtCtrl   = TextEditingController();
-  final _provinceCtrl   = TextEditingController();
-  final _wardCtrl       = TextEditingController();
+  final _dobCtrl = TextEditingController();
+  final _streetCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
+  final _districtCtrl = TextEditingController();
+  final _provinceCtrl = TextEditingController();
+  final _wardCtrl = TextEditingController();
 
   // Uploaded image URLs
   String? _frontUrl;
@@ -40,14 +41,14 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   String? _selfieUrl;
 
   // Per-slot upload state
-  bool _uploadingFront   = false;
-  bool _uploadingBack    = false;
-  bool _uploadingSelfie  = false;
+  bool _uploadingFront = false;
+  bool _uploadingBack = false;
+  bool _uploadingSelfie = false;
 
-  bool _isLoading    = true;   // loading existing status
-  bool _isSubmitted  = false;
+  bool _isLoading = true; // loading existing status
+  bool _isSubmitted = false;
   bool _isSubmitting = false;
-  String _kycStatus  = '';     // 'pending' | 'verified' | 'rejected' | ''
+  String _kycStatus = ''; // 'pending' | 'verified' | 'rejected' | ''
 
   @override
   void initState() {
@@ -82,27 +83,27 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       _kycStatus = status;
 
       // Pre-fill form fields from existing Firestore data
-      final name  = data?['name']  as String? ?? '';
+      final name = data?['name'] as String? ?? '';
       final phone = data?['phone'] as String? ?? '';
-      if (name.isNotEmpty)  _nameCtrl.text  = name;
+      if (name.isNotEmpty) _nameCtrl.text = name;
       if (phone.isNotEmpty) _phoneCtrl.text = phone;
 
       final address = data?['kycAddress'] as Map<String, dynamic>?;
       if (address != null) {
-        _streetCtrl.text     = address['street']      as String? ?? '';
-        _cityCtrl.text       = address['city']        as String? ?? '';
-        _districtCtrl.text   = address['district']    as String? ?? '';
-        _provinceCtrl.text   = address['province']    as String? ?? '';
-        _wardCtrl.text       = address['ward']        as String? ?? '';
-        _occupationCtrl.text = address['occupation']  as String? ?? '';
-        _dobCtrl.text        = address['dateOfBirth'] as String? ?? '';
+        _streetCtrl.text = address['street'] as String? ?? '';
+        _cityCtrl.text = address['city'] as String? ?? '';
+        _districtCtrl.text = address['district'] as String? ?? '';
+        _provinceCtrl.text = address['province'] as String? ?? '';
+        _wardCtrl.text = address['ward'] as String? ?? '';
+        _occupationCtrl.text = address['occupation'] as String? ?? '';
+        _dobCtrl.text = address['dateOfBirth'] as String? ?? '';
       }
 
       final docs = data?['kycDocuments'] as Map<String, dynamic>?;
       if (docs != null) {
-        _frontUrl  = docs['citizenshipFront'] as String?;
-        _backUrl   = docs['citizenshipBack']  as String?;
-        _selfieUrl = docs['selfie']           as String?;
+        _frontUrl = docs['citizenshipFront'] as String?;
+        _backUrl = docs['citizenshipBack'] as String?;
+        _selfieUrl = docs['selfie'] as String?;
       }
 
       // Show status screen for pending or verified
@@ -159,9 +160,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
     final file = File(picked.path);
     setState(() {
-      if (slot == 'front')  _uploadingFront   = true;
-      if (slot == 'back')   _uploadingBack    = true;
-      if (slot == 'selfie') _uploadingSelfie  = true;
+      if (slot == 'front') _uploadingFront = true;
+      if (slot == 'back') _uploadingBack = true;
+      if (slot == 'selfie') _uploadingSelfie = true;
     });
 
     try {
@@ -171,8 +172,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       );
       if (mounted) {
         setState(() {
-          if (slot == 'front')  _frontUrl  = url;
-          if (slot == 'back')   _backUrl   = url;
+          if (slot == 'front') _frontUrl = url;
+          if (slot == 'back') _backUrl = url;
           if (slot == 'selfie') _selfieUrl = url;
         });
       }
@@ -183,9 +184,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     } finally {
       if (mounted) {
         setState(() {
-          if (slot == 'front')  _uploadingFront   = false;
-          if (slot == 'back')   _uploadingBack    = false;
-          if (slot == 'selfie') _uploadingSelfie  = false;
+          if (slot == 'front') _uploadingFront = false;
+          if (slot == 'back') _uploadingBack = false;
+          if (slot == 'selfie') _uploadingSelfie = false;
         });
       }
     }
@@ -216,11 +217,11 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         name: _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
         addressData: {
-          'street':   _streetCtrl.text.trim(),
-          'city':     _cityCtrl.text.trim(),
+          'street': _streetCtrl.text.trim(),
+          'city': _cityCtrl.text.trim(),
           'district': _districtCtrl.text.trim(),
           'province': _provinceCtrl.text.trim(),
-          'ward':     _wardCtrl.text.trim(),
+          'ward': _wardCtrl.text.trim(),
           if (_occupationCtrl.text.trim().isNotEmpty)
             'occupation': _occupationCtrl.text.trim(),
           if (_dobCtrl.text.trim().isNotEmpty)
@@ -228,11 +229,16 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         },
         documents: {
           'citizenshipFront': _frontUrl!,
-          'citizenshipBack':  _backUrl!,
-          'selfie':           _selfieUrl!,
+          'citizenshipBack': _backUrl!,
+          'selfie': _selfieUrl!,
         },
       );
-      if (mounted) setState(() { _isSubmitted = true; _isSubmitting = false; _kycStatus = 'pending'; });
+      if (mounted)
+        setState(() {
+          _isSubmitted = true;
+          _isSubmitting = false;
+          _kycStatus = 'pending';
+        });
     } catch (e) {
       if (mounted) {
         _showSnack('Submission error: $e', isError: true);
@@ -286,8 +292,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _isSubmitted
-              ? _buildStatus(theme)
-              : _buildForm(theme),
+          ? _buildStatus(theme)
+          : _buildForm(theme),
     );
   }
 
@@ -297,15 +303,13 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     final isVerified = _kycStatus == 'verified';
     final isRejected = _kycStatus == 'rejected';
 
-    final iconName  = isVerified ? 'verified_user'   : 'hourglass_top';
-    final iconColor = isVerified ? Colors.green       : theme.colorScheme.primary;
-    final bgColor   = isVerified
+    final iconName = isVerified ? 'verified_user' : 'hourglass_top';
+    final iconColor = isVerified ? Colors.green : theme.colorScheme.primary;
+    final bgColor = isVerified
         ? Colors.green.withAlpha(30)
         : theme.colorScheme.primaryContainer;
-    final title     = isVerified
-        ? 'KYC Verified ✓'
-        : 'Submitted for Review';
-    final subtitle  = isVerified
+    final title = isVerified ? 'KYC Verified ✓' : 'Submitted for Review';
+    final subtitle = isVerified
         ? 'Your identity has been verified. You can now apply for land listings and message land owners.'
         : 'Your KYC documents have been uploaded and submitted. Our admin team will verify your documents within 1–2 business days.';
     final badgeText = isVerified ? 'Verified' : 'Under Review';
@@ -318,17 +322,23 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 80, height: 80,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
               child: Center(
-                child: CustomIconWidget(iconName: iconName, color: iconColor, size: 36),
+                child: CustomIconWidget(
+                  iconName: iconName,
+                  color: iconColor,
+                  size: 36,
+                ),
               ),
             ),
             const SizedBox(height: 24),
             Text(
               title,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 20, fontWeight: FontWeight.w700,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
                 color: theme.colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
@@ -337,7 +347,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
             Text(
               subtitle,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 14, color: theme.colorScheme.outline, height: 1.6,
+                fontSize: 14,
+                color: theme.colorScheme.outline,
+                height: 1.6,
               ),
               textAlign: TextAlign.center,
             ),
@@ -355,13 +367,15 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                 children: [
                   CustomIconWidget(
                     iconName: isVerified ? 'check_circle' : 'schedule',
-                    color: badgeColor, size: 14,
+                    color: badgeColor,
+                    size: 14,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     badgeText,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13, fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                       color: badgeColor,
                     ),
                   ),
@@ -377,12 +391,13 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                 child: OutlinedButton(
                   onPressed: () => setState(() {
                     _isSubmitted = false;
-                    _kycStatus   = '';
+                    _kycStatus = '';
                   }),
                   child: Text(
                     'Resubmit KYC',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14, fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -459,18 +474,26 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
             // Full Name (mandatory)
             _buildTextField(
-              theme, _nameCtrl, 'Full Name *', 'person_outline',
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Full name is required' : null,
+              theme,
+              _nameCtrl,
+              'Full Name *',
+              'person_outline',
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? 'Full name is required'
+                  : null,
             ),
             const SizedBox(height: 12),
 
             // Phone Number (mandatory)
             _buildTextField(
-              theme, _phoneCtrl, 'Phone Number *', 'phone',
+              theme,
+              _phoneCtrl,
+              'Phone Number *',
+              'phone',
               keyboardType: TextInputType.phone,
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Phone number is required';
+                if (v == null || v.trim().isEmpty)
+                  return 'Phone number is required';
                 final cleaned = v.trim();
                 if (!RegExp(r'^[+0-9]').hasMatch(cleaned)) {
                   return 'Enter a valid phone number';
@@ -482,7 +505,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
             // Occupation (optional)
             _buildTextField(
-              theme, _occupationCtrl, 'Occupation (optional)', 'work_outline',
+              theme,
+              _occupationCtrl,
+              'Occupation (optional)',
+              'work_outline',
             ),
             const SizedBox(height: 12),
 
@@ -512,7 +538,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
               },
               child: AbsorbPointer(
                 child: _buildTextField(
-                  theme, _dobCtrl, 'Date of Birth (optional)', 'calendar_today',
+                  theme,
+                  _dobCtrl,
+                  'Date of Birth (optional)',
+                  'calendar_today',
                 ),
               ),
             ),
@@ -570,15 +599,23 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
             _buildSectionHeader(theme, 'Address Information', 'location_on'),
             const SizedBox(height: 12),
 
-            _buildTextField(theme, _streetCtrl, 'Street / Tole', 'home',
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Required' : null),
+            _buildTextField(
+              theme,
+              _streetCtrl,
+              'Street / Tole',
+              'home',
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Required' : null,
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: _buildTextField(
-                    theme, _wardCtrl, 'Ward No.', 'tag',
+                    theme,
+                    _wardCtrl,
+                    'Ward No.',
+                    'tag',
                     keyboardType: TextInputType.number,
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required' : null,
@@ -587,7 +624,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildTextField(
-                    theme, _cityCtrl, 'Municipality / City', 'location_city',
+                    theme,
+                    _cityCtrl,
+                    'Municipality / City',
+                    'location_city',
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required' : null,
                   ),
@@ -599,7 +639,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
               children: [
                 Expanded(
                   child: _buildTextField(
-                    theme, _districtCtrl, 'District', 'map',
+                    theme,
+                    _districtCtrl,
+                    'District',
+                    'map',
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required' : null,
                   ),
@@ -607,7 +650,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildTextField(
-                    theme, _provinceCtrl, 'Province', 'terrain',
+                    theme,
+                    _provinceCtrl,
+                    'Province',
+                    'terrain',
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required' : null,
                   ),
@@ -634,9 +680,11 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                 ),
                 child: _isSubmitting
                     ? const SizedBox(
-                        width: 22, height: 22,
+                        width: 22,
+                        height: 22,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white,
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
                       )
                     : Row(
@@ -703,120 +751,135 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         child: isUploading
             ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
             : uploaded
-                ? Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(uploadedUrl ?? '', fit: BoxFit.cover),
-                      // Success overlay
-                      Positioned(
-                        top: 6, right: 6,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CustomIconWidget(
-                                iconName: 'check',
-                                color: Colors.white,
-                                size: 10,
-                              ),
-                              const SizedBox(width: 3),
-                              Text('Uploaded',
-                                  style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 9,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600)),
-                            ],
-                          ),
-                        ),
+            ? Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(uploadedUrl ?? '', fit: BoxFit.cover),
+                  // Success overlay
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
                       ),
-                      // Retake button
-                      Positioned(
-                        bottom: 6, right: 6,
-                        child: GestureDetector(
-                          onTap: onTap,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withAlpha(140),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text('Retake',
-                                style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 10,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600)),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CustomIconWidget(
+                            iconName: 'check',
+                            color: Colors.white,
+                            size: 10,
                           ),
-                        ),
-                      ),
-                    ],
-                  )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 44, height: 44,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: CustomIconWidget(
-                            iconName: icon,
-                            color: theme.colorScheme.primary,
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        label,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (hint != null) ...[
-                        const SizedBox(height: 3),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            hint,
+                          const SizedBox(width: 3),
+                          Text(
+                            'Uploaded',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 10,
-                              color: theme.colorScheme.outline,
+                              fontSize: 9,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
                             ),
-                            textAlign: TextAlign.center,
                           ),
-                        ),
-                      ],
-                      const SizedBox(height: 6),
-                      Container(
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Retake button
+                  Positioned(
+                    bottom: 6,
+                    right: 6,
+                    child: GestureDetector(
+                      onTap: onTap,
+                      child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withAlpha(20),
+                          color: Colors.black.withAlpha(140),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          'Tap to upload',
+                          'Retake',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
+                            fontSize: 10,
+                            color: Colors.white,
                             fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.primary,
                           ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: CustomIconWidget(
+                        iconName: icon,
+                        color: theme.colorScheme.primary,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (hint != null) ...[
+                    const SizedBox(height: 3),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        hint,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          color: theme.colorScheme.outline,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withAlpha(20),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'Tap to upload',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -825,9 +888,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
   Widget _buildProgressRow(ThemeData theme) {
     final steps = [
-      {'label': 'ID Front',      'done': _frontUrl != null},
-      {'label': 'ID Back',       'done': _backUrl  != null},
-      {'label': 'Selfie',        'done': _selfieUrl != null},
+      {'label': 'ID Front', 'done': _frontUrl != null},
+      {'label': 'ID Back', 'done': _backUrl != null},
+      {'label': 'Selfie', 'done': _selfieUrl != null},
       {
         'label': 'Personal Info',
         'done': _nameCtrl.text.isNotEmpty && _phoneCtrl.text.isNotEmpty,
@@ -849,7 +912,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                 child: Column(
                   children: [
                     Container(
-                      width: 32, height: 32,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: isDone
                             ? theme.colorScheme.primary
@@ -859,12 +923,20 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                       child: Center(
                         child: isDone
                             ? CustomIconWidget(
-                                iconName: 'check', color: Colors.white, size: 14)
-                            : Text('${i + 1}',
+                                iconName: 'check',
+                                color: Colors.white,
+                                size: 14,
+                              )
+                            : Text(
+                                '${i + 1}',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12, fontWeight: FontWeight.w600,
-                                  color: theme.colorScheme.onSurface.withAlpha(120),
-                                )),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface.withAlpha(
+                                    120,
+                                  ),
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -872,8 +944,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                       step['label'] as String,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
-                        fontWeight:
-                            isDone ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
                         color: isDone
                             ? theme.colorScheme.primary
                             : theme.colorScheme.outline,
@@ -903,12 +974,17 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   Widget _buildSectionHeader(ThemeData theme, String title, String icon) {
     return Row(
       children: [
-        CustomIconWidget(iconName: icon, color: theme.colorScheme.primary, size: 20),
+        CustomIconWidget(
+          iconName: icon,
+          color: theme.colorScheme.primary,
+          size: 20,
+        ),
         const SizedBox(width: 8),
         Text(
           title,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 15, fontWeight: FontWeight.w700,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
             color: theme.colorScheme.onSurface,
           ),
         ),
@@ -934,7 +1010,11 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         labelText: label,
         prefixIcon: Padding(
           padding: const EdgeInsets.all(12),
-          child: CustomIconWidget(iconName: icon, color: theme.colorScheme.outline, size: 18),
+          child: CustomIconWidget(
+            iconName: icon,
+            color: theme.colorScheme.outline,
+            size: 18,
+          ),
         ),
         prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
       ),
@@ -961,7 +1041,8 @@ class _SourcePickerSheet extends StatelessWidget {
         children: [
           Center(
             child: Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: theme.colorScheme.outline.withAlpha(70),
                 borderRadius: BorderRadius.circular(2),
@@ -969,9 +1050,13 @@ class _SourcePickerSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Text('Choose Photo Source',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(
+            'Choose Photo Source',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -1029,11 +1114,14 @@ class _SourceOption extends StatelessWidget {
               size: 28,
             ),
             const SizedBox(height: 8),
-            Text(label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14, fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
-                )),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
           ],
         ),
       ),
