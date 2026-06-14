@@ -1,6 +1,18 @@
 'use client';
 import { useState } from 'react';
-import { Search, CheckCircle, XCircle, RotateCcw, ZoomIn } from 'lucide-react';
+import {
+  Search,
+  CheckCircle2,
+  XCircle,
+  RotateCcw,
+  ZoomIn,
+  Phone,
+  CalendarDays,
+  MapPin,
+  Files,
+  AlertTriangle,
+  ShieldCheck,
+} from 'lucide-react';
 import { useAdmin } from '@/context/AdminContext';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
@@ -48,27 +60,27 @@ export default function KycSection() {
   };
 
   const TABS: { value: KycTab; label: string; active: string }[] = [
-    { value: 'pending',  label: 'Pending',  active: 'bg-amber-400 text-amber-900' },
-    { value: 'verified', label: 'Verified', active: 'bg-green-500 text-white' },
-    { value: 'rejected', label: 'Rejected', active: 'bg-red-500 text-white' },
-    { value: '',         label: 'All',      active: 'bg-gray-500 text-white' },
+    { value: 'pending',  label: 'Pending',  active: 'bg-white text-gray-950 shadow-sm border-gray-200' },
+    { value: 'verified', label: 'Verified', active: 'bg-white text-gray-950 shadow-sm border-gray-200' },
+    { value: 'rejected', label: 'Rejected', active: 'bg-white text-gray-950 shadow-sm border-gray-200' },
+    { value: '',         label: 'All',      active: 'bg-white text-gray-950 shadow-sm border-gray-200' },
   ];
 
   return (
     <div className="fade-up space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-2 bg-white border border-green-100 rounded-xl px-3 py-2.5 flex-1 max-w-sm shadow-sm">
+      <div className="admin-toolbar">
+        <div className="admin-search flex-1 max-w-sm">
           <Search size={14} className="text-gray-400 flex-shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search KYC requests…"
             className="border-none outline-none bg-transparent text-sm flex-1" />
         </div>
-        <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
+        <div className="flex gap-1 bg-gray-100 border border-gray-200 rounded-lg p-1">
           {TABS.map(t => (
             <button key={t.value} onClick={() => setTab(t.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors
-                ${tab === t.value ? t.active : 'text-gray-500 hover:bg-gray-100'}`}>
+              className={`border border-transparent px-3 py-2 rounded-md text-xs font-semibold transition-colors
+                ${tab === t.value ? t.active : 'text-gray-500 hover:text-gray-900'}`}>
               {t.label}
               {t.value !== '' && (
                 <span className="ml-1.5 opacity-75">({users.filter(u => u.kycStatus === t.value).length})</span>
@@ -80,15 +92,15 @@ export default function KycSection() {
 
       {/* Empty state */}
       {list.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-            <CheckCircle size={24} className="text-gray-300" />
+        <div className="admin-card flex flex-col items-center justify-center py-20">
+          <div className="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center mb-3">
+            <CheckCircle2 size={22} className="text-green-600" />
           </div>
-          <div className="font-semibold text-gray-400">No KYC records match this filter</div>
-          {tab === 'pending' && <div className="text-xs text-gray-300 mt-1">All caught up! ✓</div>}
+          <div className="font-semibold text-gray-700">No KYC records match this filter</div>
+          {tab === 'pending' && <div className="text-xs text-gray-400 mt-1">All pending requests have been reviewed.</div>}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
           {list.map(u => (
             <KycCard key={u.id} user={u}
               onApprove={() => setConfirm({ user: u, action: 'approve' })}
@@ -107,12 +119,12 @@ export default function KycSection() {
           size="sm"
           footer={
             <>
-              <button onClick={() => setConfirm(null)} className="px-4 py-2 rounded-xl bg-gray-100 text-sm font-semibold">Cancel</button>
+              <button onClick={() => setConfirm(null)} className="admin-button-secondary">Cancel</button>
               <button
                 onClick={() => updateKyc(confirm.user,
                   confirm.action === 'approve' ? 'verified' :
                   confirm.action === 'reject'  ? 'rejected' : 'pending')}
-                className={`px-4 py-2 rounded-xl text-white text-sm font-semibold transition-colors
+                className={`min-h-10 px-4 rounded-lg text-white text-sm font-semibold transition-colors
                   ${confirm.action === 'approve' ? 'bg-green-600 hover:bg-green-700' :
                     confirm.action === 'reject'  ? 'bg-red-600 hover:bg-red-700' :
                     'bg-blue-600 hover:bg-blue-700'}`}>
@@ -140,7 +152,7 @@ export default function KycSection() {
       {imgZoom && (
         <div className="fixed inset-0 z-[600] bg-black/80 flex items-center justify-center p-4 cursor-zoom-out"
           onClick={() => setImgZoom(null)}>
-          <img src={imgZoom} alt="Document" className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl object-contain" />
+          <img src={imgZoom} alt="Document" className="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain" />
         </div>
       )}
     </div>
@@ -154,37 +166,45 @@ function KycCard({ user, onApprove, onReject, onReset, onZoom }: {
   onReset: () => void;
   onZoom: (url: string) => void;
 }) {
-  const borderMap = {
-    pending:  'border-amber-200 bg-amber-50/30',
-    verified: 'border-green-200 bg-green-50/20',
-    rejected: 'border-red-200 bg-red-50/20',
+  const statusMap = {
+    pending:  { border: 'border-l-amber-400', icon: 'bg-amber-50 text-amber-600', label: 'Awaiting review' },
+    verified: { border: 'border-l-green-500', icon: 'bg-green-50 text-green-700', label: 'Identity verified' },
+    rejected: { border: 'border-l-red-400', icon: 'bg-red-50 text-red-600', label: 'Needs resubmission' },
   };
   const docs = user.kycDocuments;
+  const status = statusMap[user.kycStatus];
+  const documentList = docs ? [
+    { url: docs.citizenshipFront, label: 'ID Front' },
+    { url: docs.citizenshipBack,  label: 'ID Back' },
+    { url: docs.selfie,           label: 'Selfie' },
+  ].filter(d => d.url) : [];
 
   return (
-    <div className={`rounded-2xl p-5 shadow-sm border-2 hover:-translate-y-1 transition-all duration-200 ${borderMap[user.kycStatus]}`}
-      style={{ background: 'white' }}>
+    <article className={`admin-card overflow-hidden border-l-4 ${status.border}`}>
 
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <Avatar name={user.name} photoUrl={user.photoUrl} size={52} radius="14px" />
+      <div className="flex items-start gap-3 border-b border-gray-100 px-5 py-4">
+        <Avatar name={user.name} photoUrl={user.photoUrl} size={48} radius="10px" />
         <div className="flex-1 min-w-0">
-          <div className="font-bold text-gray-900 truncate">{user.name}</div>
+          <div className="font-semibold text-gray-950 truncate">{user.name}</div>
           <div className="text-xs text-gray-400 truncate">{user.email}</div>
-          <div className="flex gap-1.5 mt-1.5 flex-wrap">
+          <div className="flex gap-1.5 mt-2 flex-wrap">
             <Badge variant={user.role}>{user.role === 'farmer' ? 'Farmer' : 'Land Owner'}</Badge>
             <Badge variant={user.kycStatus}>{user.kycStatus.charAt(0).toUpperCase() + user.kycStatus.slice(1)}</Badge>
           </div>
         </div>
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${status.icon}`} title={status.label}>
+          <ShieldCheck size={18} />
+        </div>
       </div>
 
       {/* Info */}
-      <div className="grid grid-cols-2 gap-2 mb-4 text-xs text-gray-500">
-        <div className="flex items-center gap-1.5"><span>📞</span>{user.phone || '—'}</div>
-        <div className="flex items-center gap-1.5"><span>📅</span>{user.joined}</div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-5 py-4 text-xs text-gray-600">
+        <div className="flex items-center gap-2 min-w-0"><Phone size={14} className="text-gray-400 flex-shrink-0" /><span className="truncate">{user.phone || 'Not provided'}</span></div>
+        <div className="flex items-center gap-2 min-w-0"><CalendarDays size={14} className="text-gray-400 flex-shrink-0" /><span className="truncate">{user.joined}</span></div>
         {user.kycAddress && (
-          <div className="col-span-2 flex items-start gap-1.5">
-            <span>📍</span>
+          <div className="col-span-2 flex items-start gap-2">
+            <MapPin size={14} className="text-gray-400 flex-shrink-0 mt-0.5" />
             <span className="truncate">
               {[user.kycAddress.city, user.kycAddress.district, user.kycAddress.province].filter(Boolean).join(', ')}
             </span>
@@ -193,52 +213,53 @@ function KycCard({ user, onApprove, onReject, onReset, onZoom }: {
       </div>
 
       {/* KYC Documents */}
-      {docs ? (
-        <div className="mb-4">
-          <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-2">Documents</div>
-          <div className="flex gap-2">
-            {[
-              { url: docs.citizenshipFront, label: 'ID Front' },
-              { url: docs.citizenshipBack,  label: 'ID Back' },
-              { url: docs.selfie,           label: 'Selfie' },
-            ].filter(d => d.url).map(d => (
+      <div className="border-t border-gray-100 px-5 py-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+            <Files size={14} className="text-gray-400" /> Submitted documents
+          </div>
+          <span className="text-[10px] font-semibold text-gray-400">{documentList.length}/3</span>
+        </div>
+        {documentList.length > 0 ? (
+          <div className="grid grid-cols-3 gap-2">
+            {documentList.map(d => (
               <button key={d.label} onClick={() => onZoom(d.url!)}
-                className="group relative flex flex-col items-center border-2 border-gray-200 hover:border-green-400 rounded-xl overflow-hidden transition-all w-[72px] flex-shrink-0">
-                <img src={d.url} alt={d.label} className="w-full h-14 object-cover" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                className="group relative min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 text-left transition-colors hover:border-green-300">
+                <img src={d.url} alt={d.label} className="aspect-[4/3] w-full object-cover" />
+                <div className="absolute inset-x-0 top-0 aspect-[4/3] bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <ZoomIn size={16} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <span className="text-[9px] font-bold py-1 text-gray-500 group-hover:text-green-600 transition-colors">{d.label}</span>
+                <span className="block truncate px-2 py-1.5 text-[10px] font-semibold text-gray-600">{d.label}</span>
               </button>
             ))}
           </div>
-        </div>
-      ) : user.kycStatus === 'pending' ? (
-        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-amber-700 flex items-center gap-2">
-          <span>⚠</span> No documents uploaded yet
-        </div>
-      ) : null}
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-700">
+            <AlertTriangle size={15} className="flex-shrink-0" /> No documents uploaded yet
+          </div>
+        )}
+      </div>
 
       {/* Actions */}
-      <div className="pt-3 border-t border-gray-100">
+      <div className="border-t border-gray-100 bg-gray-50/70 px-5 py-3">
         {user.kycStatus === 'pending' ? (
           <div className="flex gap-2">
             <button onClick={onApprove}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white rounded-xl py-2 text-xs font-bold transition-colors">
-              <CheckCircle size={13} /> Approve
+              className="admin-button-primary flex-1 !min-h-9 !text-xs">
+              <CheckCircle2 size={14} /> Approve
             </button>
             <button onClick={onReject}
-              className="flex-1 flex items-center justify-center gap-1.5 border-2 border-red-200 bg-white hover:bg-red-50 text-red-600 rounded-xl py-2 text-xs font-bold transition-colors">
-              <XCircle size={13} /> Reject
+              className="admin-button-danger flex-1 !min-h-9 !text-xs">
+              <XCircle size={14} /> Reject
             </button>
           </div>
         ) : (
           <button onClick={onReset}
-            className="w-full flex items-center justify-center gap-1.5 border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-600 rounded-xl py-2 text-xs font-bold transition-colors">
-            <RotateCcw size={13} /> Reset to Pending
+            className="admin-button-secondary w-full !min-h-9 !text-xs">
+            <RotateCcw size={14} /> Reset to Pending
           </button>
         )}
       </div>
-    </div>
+    </article>
   );
 }

@@ -86,7 +86,7 @@ class MyApp extends StatelessWidget {
                 GlobalCupertinoLocalizations.delegate,
               ],
 
-              // 🚨 CRITICAL: NEVER REMOVE OR MODIFY
+              // NEVER REMOVE OR MODIFY
               builder: (context, child) {
                 return MediaQuery(
                   data: MediaQuery.of(context)
@@ -94,7 +94,7 @@ class MyApp extends StatelessWidget {
                   child: child!,
                 );
               },
-              // 🚨 END CRITICAL SECTION
+              // END CRITICAL SECTION
               debugShowCheckedModeBanner: false,
               routerConfig: appRouter,
             );

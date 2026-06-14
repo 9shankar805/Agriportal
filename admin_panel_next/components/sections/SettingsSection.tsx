@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Save, ExternalLink, Bell, User, Database } from 'lucide-react';
+import { Save, ExternalLink, Bell, User, Database, CheckCircle2 } from 'lucide-react';
 import { useAdmin } from '@/context/AdminContext';
 
 export default function SettingsSection() {
@@ -27,7 +27,7 @@ export default function SettingsSection() {
   return (
     <div className="fade-up grid grid-cols-1 lg:grid-cols-2 gap-5">
       {/* Admin Profile */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="admin-card p-6">
         <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
           <User size={16} className="text-green-600" />Admin Profile
         </h3>
@@ -49,14 +49,14 @@ export default function SettingsSection() {
               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-green-400 transition-colors"
             />
           </div>
-          <button onClick={saveProfile} className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors">
+          <button onClick={saveProfile} className="admin-button-primary">
             <Save size={14} /> Save Changes
           </button>
         </div>
       </div>
 
       {/* Notifications */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="admin-card p-6">
         <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
           <Bell size={16} className="text-amber-500" />Notifications
         </h3>
@@ -67,29 +67,40 @@ export default function SettingsSection() {
             { key: 'landApplications' as const, label: 'New Land Applications',   desc: 'Notify on land lease applications' },
             { key: 'messageActivity' as const,  label: 'Message Activity',        desc: 'Live message feed alerts' },
           ].map(n => (
-            <div key={n.key} className="flex items-center justify-between gap-3">
-              <div>
+            <div key={n.key} className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 px-3 py-3">
+              <div className="min-w-0">
                 <div className="font-semibold text-sm">{n.label}</div>
                 <div className="text-xs text-gray-400">{n.desc}</div>
               </div>
               <button
+                type="button"
                 onClick={() => toggle(n.key)}
-                className={`w-11 h-6 rounded-full relative transition-colors duration-200 flex-shrink-0 ${notifs[n.key] ? 'bg-green-500' : 'bg-gray-300'}`}
+                className={`relative h-6 w-11 flex-shrink-0 rounded-full border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600/25 focus-visible:ring-offset-2 ${
+                  notifs[n.key]
+                    ? 'border-green-700 bg-green-700'
+                    : 'border-gray-300 bg-gray-200 hover:bg-gray-300'
+                }`}
                 role="switch"
                 aria-checked={notifs[n.key]}
+                aria-label={`${n.label}: ${notifs[n.key] ? 'enabled' : 'disabled'}`}
               >
-                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${notifs[n.key] ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                <span
+                  aria-hidden="true"
+                  className={`absolute left-0.5 top-0.5 h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out ${
+                    notifs[n.key] ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
               </button>
             </div>
           ))}
         </div>
-        <button onClick={saveNotifs} className="mt-4 flex items-center gap-1.5 border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg px-4 py-2 text-sm font-semibold transition-colors">
+        <button onClick={saveNotifs} className="admin-button-secondary mt-4">
           <Save size={14} /> Save Preferences
         </button>
       </div>
 
       {/* Firebase Config */}
-      <div className="bg-white rounded-xl shadow-sm p-6 lg:col-span-2">
+      <div className="admin-card p-6 lg:col-span-2">
         <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
           <Database size={16} className="text-orange-500" />Firebase Configuration
         </h3>
@@ -106,8 +117,8 @@ export default function SettingsSection() {
             </div>
           ))}
         </div>
-        <div className="mt-4 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800 flex items-center gap-2">
-          <span className="text-green-500">✓</span>
+        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-800 flex items-center gap-2">
+          <CheckCircle2 size={16} className="text-green-600 flex-shrink-0" />
           Firebase is configured and connected to project <strong>agriportal-9ee3d</strong>.
           <a href="https://console.firebase.google.com/project/agriportal-9ee3d" target="_blank" rel="noreferrer"
             className="ml-auto flex items-center gap-1 text-green-700 hover:underline font-semibold text-xs">

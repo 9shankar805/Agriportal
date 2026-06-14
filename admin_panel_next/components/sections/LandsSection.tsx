@@ -1,10 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { Search, Eye, Check, X, Pause, Trash2, Plus } from 'lucide-react';
+import { Search, Eye, Check, X, Pause, Trash2, Plus, MapPin } from 'lucide-react';
 import { useAdmin } from '@/context/AdminContext';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import type { Land } from '@/lib/types';
+import SortableHeader, { type SortDirection } from '@/components/ui/SortableHeader';
 
 export default function LandsSection() {
   const { lands, apps, setLands, showToast, firebaseReady } = useAdmin();
@@ -12,11 +13,21 @@ export default function LandsSection() {
   const [statusF, setStatusF] = useState('');
   const [modal,   setModal]   = useState<Land | null>(null);
   const [confirm, setConfirm] = useState<{ land: Land; action: string } | null>(null);
+  const [sort, setSort] = useState<{ column: string; direction: SortDirection }>({ column: 'title', direction: 'asc' });
 
-  const list = lands.filter(l =>
+  const filtered = lands.filter(l =>
     (!search  || l.title.toLowerCase().includes(search.toLowerCase()) || l.location.toLowerCase().includes(search.toLowerCase()) || l.owner.toLowerCase().includes(search.toLowerCase())) &&
     (!statusF || l.status === statusF)
   );
+  const list = [...filtered].sort((a, b) => {
+    const aValue = a[sort.column as keyof Land] ?? '';
+    const bValue = b[sort.column as keyof Land] ?? '';
+    return String(aValue).localeCompare(String(bValue), undefined, { numeric: true }) * (sort.direction === 'asc' ? 1 : -1);
+  });
+  const handleSort = (column: string) => setSort(prev => ({
+    column,
+    direction: prev.column === column && prev.direction === 'asc' ? 'desc' : 'asc',
+  }));
 
   const setStatus = async (id: string, status: Land['status']) => {
     setLands(prev => prev.map(l => l.id === id ? { ...l, status } : l));
@@ -60,13 +71,13 @@ export default function LandsSection() {
   return (
     <div className="fade-up space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-2 bg-white border border-green-100 rounded-lg px-3 py-2 flex-1 max-w-xs shadow-sm">
+      <div className="admin-toolbar">
+        <div className="admin-search flex-1 max-w-sm">
           <Search size={14} className="text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search listings…" className="border-none outline-none bg-transparent text-sm flex-1" />
         </div>
         <select value={statusF} onChange={e => setStatusF(e.target.value)}
-          className="border border-green-100 rounded-lg px-3 py-2 text-sm bg-white shadow-sm outline-none cursor-pointer">
+          className="admin-select">
           <option value="">All Status</option>
           <option value="active">Active</option>
           <option value="pending">Pending Review</option>
@@ -74,20 +85,25 @@ export default function LandsSection() {
         </select>
         <button
           onClick={() => window.open('https://console.firebase.google.com/project/agriportal-9ee3d/firestore/data/~2Flands','_blank')}
-          className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors ml-auto">
+          className="admin-button-primary ml-auto">
           <Plus size={14} /> Add Listing
         </button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="admin-table-panel">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-green-50/60 border-b-2 border-green-100">
-                {['#','Land Title','Owner','Location','Area','Price/Bigha','Status','Actions'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-gray-500 whitespace-nowrap">{h}</th>
-                ))}
+              <tr>
+                <th className="admin-table-static-heading text-center">#</th>
+                <SortableHeader label="Land Title" column="title" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Owner" column="owner" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Location" column="location" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Area" column="area" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Price / Bigha" column="price" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Status" column="status" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <th className="admin-table-static-heading text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -102,36 +118,36 @@ export default function LandsSection() {
                   </td>
                   <td className="px-4 py-3 text-sm">{l.owner}</td>
                   <td className="px-4 py-3 text-xs text-gray-500">
-                    <span className="text-green-600 mr-1">📍</span>{l.location}
+                    <span className="flex items-center gap-1.5"><MapPin size={13} className="text-gray-400" />{l.location}</span>
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold">{l.area} Bigha</td>
                   <td className="px-4 py-3 text-sm font-semibold">Rs {l.price.toLocaleString()}</td>
                   <td className="px-4 py-3"><Badge variant={l.status}>{l.status.charAt(0).toUpperCase()+l.status.slice(1)}</Badge></td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
-                      <button onClick={() => setModal(l)} className="w-7 h-7 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center transition-colors" title="View">
-                        <Eye size={12} />
+                      <button onClick={() => setModal(l)} className="admin-icon-button hover:!border-blue-200 hover:!bg-blue-50 hover:!text-blue-700" title="View">
+                        <Eye size={14} />
                       </button>
                       {l.status === 'pending' && <>
-                        <button onClick={() => setStatus(l.id, 'active')} className="w-7 h-7 rounded-lg border border-green-200 bg-green-50 hover:bg-green-100 text-green-600 flex items-center justify-center" title="Approve">
-                          <Check size={12} />
+                        <button onClick={() => setStatus(l.id, 'active')} className="admin-icon-button hover:!border-green-200 hover:!bg-green-50 hover:!text-green-700" title="Approve">
+                          <Check size={14} />
                         </button>
-                        <button onClick={() => setStatus(l.id, 'inactive')} className="w-7 h-7 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center" title="Reject">
-                          <X size={12} />
+                        <button onClick={() => setStatus(l.id, 'inactive')} className="admin-icon-button hover:!border-red-200 hover:!bg-red-50 hover:!text-red-600" title="Reject">
+                          <X size={14} />
                         </button>
                       </>}
                       {l.status === 'active' && (
-                        <button onClick={() => setStatus(l.id, 'inactive')} className="w-7 h-7 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-600 flex items-center justify-center" title="Deactivate">
-                          <Pause size={12} />
+                        <button onClick={() => setStatus(l.id, 'inactive')} className="admin-icon-button hover:!border-amber-200 hover:!bg-amber-50 hover:!text-amber-700" title="Deactivate">
+                          <Pause size={14} />
                         </button>
                       )}
                       {l.status === 'inactive' && (
-                        <button onClick={() => setStatus(l.id, 'active')} className="w-7 h-7 rounded-lg border border-green-200 bg-green-50 hover:bg-green-100 text-green-600 flex items-center justify-center" title="Activate">
-                          <Check size={12} />
+                        <button onClick={() => setStatus(l.id, 'active')} className="admin-icon-button hover:!border-green-200 hover:!bg-green-50 hover:!text-green-700" title="Activate">
+                          <Check size={14} />
                         </button>
                       )}
-                      <button onClick={() => setConfirm({ land: l, action: 'delete' })} className="w-7 h-7 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center" title="Delete">
-                        <Trash2 size={12} />
+                      <button onClick={() => setConfirm({ land: l, action: 'delete' })} className="admin-icon-button hover:!border-red-200 hover:!bg-red-50 hover:!text-red-600" title="Delete">
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </td>
@@ -148,18 +164,18 @@ export default function LandsSection() {
         <Modal open={!!modal} onClose={() => setModal(null)} title="Land Listing Details" size="lg"
           footer={
             <>
-              <button onClick={() => setModal(null)} className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-semibold">Close</button>
+              <button onClick={() => setModal(null)} className="admin-button-secondary">Close</button>
               {modal.status === 'pending' && <>
-                <button onClick={() => setStatus(modal.id, 'inactive')} className="px-4 py-2 rounded-lg border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50">Reject</button>
-                <button onClick={() => setStatus(modal.id, 'active')} className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-semibold">Approve</button>
+                <button onClick={() => setStatus(modal.id, 'inactive')} className="admin-button-danger">Reject</button>
+                <button onClick={() => setStatus(modal.id, 'active')} className="admin-button-primary">Approve</button>
               </>}
               {modal.status === 'active' && (
-                <button onClick={() => setStatus(modal.id, 'inactive')} className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold">Deactivate</button>
+                <button onClick={() => setStatus(modal.id, 'inactive')} className="admin-button-secondary">Deactivate</button>
               )}
               {modal.status === 'inactive' && (
-                <button onClick={() => setStatus(modal.id, 'active')} className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-semibold">Activate</button>
+                <button onClick={() => setStatus(modal.id, 'active')} className="admin-button-primary">Activate</button>
               )}
-              <button onClick={() => { setConfirm({ land: modal, action: 'delete' }); setModal(null); }} className="px-4 py-2 rounded-lg border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50">
+              <button onClick={() => { setConfirm({ land: modal, action: 'delete' }); setModal(null); }} className="admin-button-danger">
                 <Trash2 size={13} className="inline mr-1" />Delete
               </button>
             </>
@@ -183,8 +199,8 @@ export default function LandsSection() {
         <Modal open={!!confirm} onClose={() => setConfirm(null)} title="Delete Listing" size="sm"
           footer={
             <>
-              <button onClick={() => setConfirm(null)} className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-semibold">Cancel</button>
-              <button onClick={() => deleteLand(confirm.land.id)} className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">Delete</button>
+              <button onClick={() => setConfirm(null)} className="admin-button-secondary">Cancel</button>
+              <button onClick={() => deleteLand(confirm.land.id)} className="admin-button-danger !bg-red-600 !text-white hover:!bg-red-700">Delete</button>
             </>
           }
         >
