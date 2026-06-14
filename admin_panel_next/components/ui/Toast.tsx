@@ -3,10 +3,10 @@ import { CheckCircle, AlertTriangle, XCircle, Info, X } from 'lucide-react';
 import { useAdmin } from '@/context/AdminContext';
 
 const CONFIG = {
-  success: { bg: 'bg-gradient-to-r from-green-500 to-emerald-600', icon: CheckCircle },
-  warning: { bg: 'bg-gradient-to-r from-amber-500 to-orange-600', icon: AlertTriangle },
-  danger:  { bg: 'bg-gradient-to-r from-red-500 to-rose-600',   icon: XCircle },
-  info:    { bg: 'bg-gradient-to-r from-blue-500 to-indigo-600',  icon: Info },
+  success: { bg: 'bg-green-700', icon: CheckCircle },
+  warning: { bg: 'bg-amber-600', icon: AlertTriangle },
+  danger:  { bg: 'bg-red-600',   icon: XCircle },
+  info:    { bg: 'bg-blue-600',   icon: Info },
 };
 
 export default function ToastContainer() {
@@ -18,7 +18,7 @@ export default function ToastContainer() {
         return (
           <div
             key={t.id}
-            className={`toast-in flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl text-white text-sm font-semibold min-w-[300px] pointer-events-auto ${bg}`}
+            className={`toast-in flex items-center gap-3 px-5 py-4 rounded-lg shadow-xl text-white text-sm font-semibold min-w-[300px] pointer-events-auto ${bg}`}
           >
             <Icon size={20} className="flex-shrink-0" />
             <span className="flex-1">{t.msg}</span>

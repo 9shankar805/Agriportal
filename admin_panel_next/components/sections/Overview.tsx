@@ -49,17 +49,17 @@ export default function Overview({ onNav }: OverviewProps) {
   const adminName = authUser?.displayName || (authUser?.email ? authUser.email.split('@')[0] : 'Admin');
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       {/* Welcome strip */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
         <div>
-          <h2 className="text-3xl font-extrabold text-gray-900">Good {greeting()}, {adminName} 👋</h2>
-          <p className="text-gray-500 mt-2 text-lg">Here's what's happening on AgriPortal today.</p>
+          <h2 className="text-2xl font-bold text-gray-950">Good {greeting()}, {adminName}</h2>
+          <p className="text-gray-500 mt-1 text-sm">Here is today&apos;s operational snapshot for AgriPortal.</p>
         </div>
       </div>
 
       {/* Main stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard 
           icon={Users} 
           value={users.length} 
@@ -97,104 +97,104 @@ export default function Overview({ onNav }: OverviewProps) {
       </div>
 
       {/* Pending action cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div 
           onClick={() => onNav('kyc')}
-          className="group cursor-pointer bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-3xl p-7 transition-all hover:shadow-xl hover:-translate-y-2 shadow-sm"
+          className="group cursor-pointer bg-white border border-gray-200 rounded-lg p-5 transition-all hover:border-amber-300 hover:shadow-md"
         >
-          <div className="flex items-center justify-between mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 shadow-sm">
-              <ShieldQuestion size={24} />
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+              <ShieldQuestion size={20} />
             </div>
-            <div className="text-4xl font-extrabold text-amber-700">{pendingKyc}</div>
+            <div className="text-3xl font-bold text-gray-950">{pendingKyc}</div>
           </div>
-          <h3 className="font-extrabold text-gray-900 mb-2 text-lg">Pending KYC</h3>
-          <p className="text-sm text-gray-500 mb-5">Review user verifications</p>
-          <div className="flex items-center text-amber-600 text-sm font-extrabold group-hover:text-amber-700">
+          <h3 className="font-semibold text-gray-900 mb-1 text-sm">Pending KYC</h3>
+          <p className="text-xs text-gray-500 mb-4">Review user verifications</p>
+          <div className="flex items-center text-green-700 text-xs font-semibold">
             <span>Review now</span>
-            <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>
         
         <div 
           onClick={() => onNav('lands')}
-          className="group cursor-pointer bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-3xl p-7 transition-all hover:shadow-xl hover:-translate-y-2 shadow-sm"
+          className="group cursor-pointer bg-white border border-gray-200 rounded-lg p-5 transition-all hover:border-indigo-300 hover:shadow-md"
         >
-          <div className="flex items-center justify-between mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
-              <Clock size={24} />
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <Clock size={20} />
             </div>
-            <div className="text-4xl font-extrabold text-indigo-700">{pendingLands}</div>
+            <div className="text-3xl font-bold text-gray-950">{pendingLands}</div>
           </div>
-          <h3 className="font-extrabold text-gray-900 mb-2 text-lg">Pending Listings</h3>
-          <p className="text-sm text-gray-500 mb-5">Approve or reject lands</p>
-          <div className="flex items-center text-indigo-600 text-sm font-extrabold group-hover:text-indigo-700">
+          <h3 className="font-semibold text-gray-900 mb-1 text-sm">Pending Listings</h3>
+          <p className="text-xs text-gray-500 mb-4">Approve or reject lands</p>
+          <div className="flex items-center text-green-700 text-xs font-semibold">
             <span>Manage</span>
-            <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>
         
         <div 
           onClick={() => onNav('applications')}
-          className="group cursor-pointer bg-gradient-to-br from-pink-50 to-rose-50 border border-pink-200 rounded-3xl p-7 transition-all hover:shadow-xl hover:-translate-y-2 shadow-sm"
+          className="group cursor-pointer bg-white border border-gray-200 rounded-lg p-5 transition-all hover:border-rose-300 hover:shadow-md"
         >
-          <div className="flex items-center justify-between mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-600 shadow-sm">
-              <FileCheck size={24} />
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600">
+              <FileCheck size={20} />
             </div>
-            <div className="text-4xl font-extrabold text-pink-700">{pendingApps}</div>
+            <div className="text-3xl font-bold text-gray-950">{pendingApps}</div>
           </div>
-          <h3 className="font-extrabold text-gray-900 mb-2 text-lg">Pending Applications</h3>
-          <p className="text-sm text-gray-500 mb-5">Review user applications</p>
-          <div className="flex items-center text-pink-600 text-sm font-extrabold group-hover:text-pink-700">
+          <h3 className="font-semibold text-gray-900 mb-1 text-sm">Pending Applications</h3>
+          <p className="text-xs text-gray-500 mb-4">Review user applications</p>
+          <div className="flex items-center text-green-700 text-xs font-semibold">
             <span>Review</span>
-            <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>
         
         <div 
           onClick={() => onNav('support')}
-          className="group cursor-pointer bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-200 rounded-3xl p-7 transition-all hover:shadow-xl hover:-translate-y-2 shadow-sm"
+          className="group cursor-pointer bg-white border border-gray-200 rounded-lg p-5 transition-all hover:border-cyan-300 hover:shadow-md"
         >
-          <div className="flex items-center justify-between mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-teal-100 flex items-center justify-center text-teal-600 shadow-sm">
-              <Headphones size={24} />
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-10 h-10 rounded-lg bg-cyan-50 flex items-center justify-center text-cyan-600">
+              <Headphones size={20} />
             </div>
-            <div className="text-4xl font-extrabold text-teal-700">{openSupport}</div>
+            <div className="text-3xl font-bold text-gray-950">{openSupport}</div>
           </div>
-          <h3 className="font-extrabold text-gray-900 mb-2 text-lg">Open Support Msgs</h3>
-          <p className="text-sm text-gray-500 mb-5">Respond to user queries</p>
-          <div className="flex items-center text-teal-600 text-sm font-extrabold group-hover:text-teal-700">
+          <h3 className="font-semibold text-gray-900 mb-1 text-sm">Open Support Messages</h3>
+          <p className="text-xs text-gray-500 mb-4">Respond to user queries</p>
+          <div className="flex items-center text-green-700 text-xs font-semibold">
             <span>Respond</span>
-            <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>
       </div>
 
       {/* Three-column panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Recent Users */}
-        <div className="lg:col-span-5 bg-white rounded-3xl shadow-md border border-gray-100 p-7">
-          <div className="flex items-center justify-between mb-6">
-            <span className="font-extrabold text-gray-900 text-lg flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
-                <UserPlus size={20} />
+        <div className="lg:col-span-5 bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-semibold text-gray-900 text-sm flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+                <UserPlus size={16} />
               </div>
               Recent Users
             </span>
-            <button onClick={() => onNav('users')} className="text-sm font-extrabold text-green-600 hover:text-green-700 flex items-center gap-2 transition-colors">
-              View all <ArrowRight size={16} />
+            <button onClick={() => onNav('users')} className="text-xs font-semibold text-green-700 hover:text-green-800 flex items-center gap-1.5 transition-colors">
+              View all <ArrowRight size={14} />
             </button>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-1">
             {recentUsers.map(u => (
-              <div key={u.id} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50/70 hover:bg-gray-50 transition-all hover:shadow-sm">
-                <Avatar name={u.name} photoUrl={u.photoUrl} size={48} />
+              <div key={u.id} className="flex items-center gap-3 px-2 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <Avatar name={u.name} photoUrl={u.photoUrl} size={40} />
                 <div className="flex-1 min-w-0">
-                  <div className="font-extrabold text-gray-900 truncate">{u.name}</div>
-                  <div className="text-sm text-gray-500 truncate">{u.email}</div>
+                  <div className="font-semibold text-sm text-gray-900 truncate">{u.name}</div>
+                  <div className="text-xs text-gray-500 truncate">{u.email}</div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-1.5">
                   <Badge variant={u.role}>{u.role === 'farmer' ? 'Farmer' : 'Land Owner'}</Badge>
                   <Badge variant={u.kycStatus}>{u.kycStatus.charAt(0).toUpperCase() + u.kycStatus.slice(1)}</Badge>
                 </div>
@@ -204,16 +204,16 @@ export default function Overview({ onNav }: OverviewProps) {
         </div>
 
         {/* Pending KYC */}
-        <div className="lg:col-span-4 bg-white rounded-3xl shadow-md border border-gray-100 p-7">
-          <div className="flex items-center justify-between mb-6">
-            <span className="font-extrabold text-gray-900 text-lg flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
-                <ShieldQuestion size={20} />
+        <div className="lg:col-span-4 bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-semibold text-gray-900 text-sm flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+                <ShieldQuestion size={16} />
               </div>
               Pending KYC
             </span>
-            <button onClick={() => onNav('kyc')} className="text-sm font-extrabold text-green-600 hover:text-green-700 flex items-center gap-2 transition-colors">
-              View all <ArrowRight size={16} />
+            <button onClick={() => onNav('kyc')} className="text-xs font-semibold text-green-700 hover:text-green-800 flex items-center gap-1.5 transition-colors">
+              View all <ArrowRight size={14} />
             </button>
           </div>
           {pendingKycList.length === 0 ? (
@@ -224,7 +224,7 @@ export default function Overview({ onNav }: OverviewProps) {
               <div className="text-sm font-medium text-gray-500">All KYC reviewed</div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-1">
               {pendingKycList.map(u => (
                 <KycQuickRow key={u.id} user={u} />
               ))}
@@ -233,25 +233,25 @@ export default function Overview({ onNav }: OverviewProps) {
         </div>
 
         {/* Live Activity */}
-        <div className="lg:col-span-3 bg-white rounded-3xl shadow-md border border-gray-100 p-7">
-          <div className="flex items-center justify-between mb-6">
-            <span className="font-extrabold text-gray-900 text-lg flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
-                <TrendingUp size={20} />
+        <div className="lg:col-span-3 bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-semibold text-gray-900 text-sm flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+                <TrendingUp size={16} />
               </div>
               Live Activity
             </span>
-            <span className="flex items-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 text-xs font-extrabold px-3 py-1.5 rounded-full border border-green-200">
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block animate-pulse"></span>
+            <span className="flex items-center gap-1.5 bg-green-50 text-green-700 text-[10px] font-semibold px-2 py-1 rounded-full border border-green-200">
+              <span className="w-2 h-2 rounded-full bg-green-500 inline-block live-dot"></span>
               Now
             </span>
           </div>
-          <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+          <div className="max-h-64 overflow-y-auto pr-2">
             {liveItems.map((item, i) => (
-              <div key={i} className="flex gap-4 items-start py-3 border-b border-gray-100 last:border-0">
-                <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ background: item.color }} />
+              <div key={i} className="flex gap-3 items-start py-3 border-b border-gray-100 last:border-0">
+                <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: item.color }} />
                 <div>
-                  <div className="text-sm text-gray-700 leading-relaxed">{item.text}</div>
+                  <div className="text-xs text-gray-700 leading-relaxed">{item.text}</div>
                   <div className="text-xs text-gray-400 mt-1">{relTime(item.ts)}</div>
                 </div>
               </div>
@@ -262,38 +262,38 @@ export default function Overview({ onNav }: OverviewProps) {
 
       {/* Message Feed */}
       {recentConvs.length > 0 && (
-        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-7">
-          <div className="flex items-center justify-between mb-6">
-            <span className="font-extrabold text-gray-900 text-lg flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                <MessageSquare size={20} />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-semibold text-gray-900 text-sm flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+                <MessageSquare size={16} />
               </div>
               Latest Message Activity
             </span>
-            <button onClick={() => onNav('messages')} className="text-sm font-extrabold text-green-600 hover:text-green-700 flex items-center gap-2 transition-colors">
-              Open Messages <ArrowRight size={16} />
+            <button onClick={() => onNav('messages')} className="text-xs font-semibold text-green-700 hover:text-green-800 flex items-center gap-1.5 transition-colors">
+              Open Messages <ArrowRight size={14} />
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             {recentConvs.map(c => (
               <div
                 key={c.id}
                 onClick={() => onNav('messages')}
-                className="bg-gradient-to-br from-green-50/90 to-emerald-50/90 border border-green-200 rounded-2xl p-5 flex gap-4 hover:from-green-50 hover:to-emerald-50 hover:shadow-lg cursor-pointer transition-all hover:-translate-y-1"
+                className="bg-white border border-gray-200 rounded-lg p-4 flex gap-3 hover:border-green-300 hover:shadow-sm cursor-pointer transition-all"
               >
                 <div 
-                  className="w-12 h-12 rounded-full flex items-center justify-center font-extrabold text-white text-base flex-shrink-0"
+                  className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
                   style={{ background: avatarColor(c.aName) }}
                 >
                   {c.aName[0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="font-extrabold text-base truncate text-gray-900">{c.aName} ↔ {c.bName}</div>
+                  <div className="flex justify-between items-center mb-1">
+                    <div className="font-semibold text-sm truncate text-gray-900">{c.aName} ↔ {c.bName}</div>
                     <div className="text-xs text-gray-400 ml-2 flex-shrink-0">{relTime(c.ts)}</div>
                   </div>
                   <div className="text-xs text-gray-500 truncate">{c.land}</div>
-                  <div className="text-sm truncate mt-2 text-gray-700">{c.lastMsg}</div>
+                  <div className="text-xs truncate mt-2 text-gray-700">{c.lastMsg}</div>
                 </div>
               </div>
             ))}
@@ -348,26 +348,26 @@ function KycQuickRow({ user }: { user: import('@/lib/types').AppUser }) {
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 rounded-2xl bg-amber-50/60 hover:bg-amber-50 transition-all hover:shadow-sm">
-      <Avatar name={user.name} photoUrl={user.photoUrl} size={48} />
+    <div className="flex items-center gap-3 px-2 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+      <Avatar name={user.name} photoUrl={user.photoUrl} size={40} />
       <div className="flex-1 min-w-0">
-        <div className="font-extrabold text-sm text-gray-900 truncate">{user.name}</div>
-        <div className="text-sm text-gray-500">{user.phone}</div>
+        <div className="font-semibold text-sm text-gray-900 truncate">{user.name}</div>
+        <div className="text-xs text-gray-500">{user.phone}</div>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5">
         <button 
           onClick={approve} 
-          className="w-10 h-10 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm" 
+          className="w-8 h-8 rounded-lg bg-green-50 hover:bg-green-100 text-green-700 flex items-center justify-center transition-colors"
           title="Approve KYC"
         >
-          <CheckCircle2 size={20} />
+          <CheckCircle2 size={16} />
         </button>
         <button 
           onClick={reject} 
-          className="w-10 h-10 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm" 
+          className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition-colors"
           title="Reject KYC"
         >
-          <XCircle size={20} />
+          <XCircle size={16} />
         </button>
       </div>
     </div>

@@ -62,7 +62,7 @@ export default function AnalyticsSection() {
       {/* Summary tiles */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {tiles.map(t => (
-          <div key={t.label} className="bg-white rounded-xl p-6 text-center shadow-sm" style={{ borderTop: `3px solid ${t.color}` }}>
+          <div key={t.label} className="admin-card p-6 text-center" style={{ borderTop: `3px solid ${t.color}` }}>
             <t.icon size={28} className="mx-auto mb-2" style={{ color: t.color }} />
             <div className="text-3xl font-extrabold count-up" style={{ color: t.color }}>{t.value}</div>
             <div className="text-xs text-gray-500 mt-1 font-medium">{t.label}</div>
@@ -72,7 +72,7 @@ export default function AnalyticsSection() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* User Role Distribution */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
+        <div className="admin-card p-5">
           <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />User Role Distribution
           </h3>
@@ -93,7 +93,7 @@ export default function AnalyticsSection() {
         </div>
 
         {/* KYC Breakdown */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
+        <div className="admin-card p-5">
           <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />KYC Status Breakdown
           </h3>
@@ -113,7 +113,7 @@ export default function AnalyticsSection() {
         </div>
 
         {/* Land by Province */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
+        <div className="admin-card p-5">
           <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />Land Listings by Province
           </h3>
@@ -124,7 +124,7 @@ export default function AnalyticsSection() {
         </div>
 
         {/* Application Status */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
+        <div className="admin-card p-5">
           <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" />Application Status
           </h3>

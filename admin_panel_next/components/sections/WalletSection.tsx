@@ -6,17 +6,34 @@ import Avatar from '@/components/ui/Avatar';
 import Modal from '@/components/ui/Modal';
 import type { WalletEntry, WalletTransaction } from '@/lib/types';
 import { relTime } from '@/lib/utils';
+import SortableHeader, { type SortDirection } from '@/components/ui/SortableHeader';
 
 export default function WalletSection() {
   const { wallets } = useAdmin();
   const [search,  setSearch]  = useState('');
   const [detail,  setDetail]  = useState<WalletEntry | null>(null);
+  const [sort, setSort] = useState<{ column: string; direction: SortDirection }>({ column: 'balance', direction: 'desc' });
 
-  const filtered = wallets.filter(w =>
+  const searched = wallets.filter(w =>
     !search ||
     w.userName.toLowerCase().includes(search.toLowerCase()) ||
     w.userEmail.toLowerCase().includes(search.toLowerCase())
   );
+  const filtered = [...searched].sort((a, b) => {
+    const totals = (wallet: WalletEntry) => ({
+      credits: wallet.transactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + t.amount, 0),
+      debits: wallet.transactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0),
+      transactions: wallet.transactions.length,
+    });
+    const value = (wallet: WalletEntry) => ['credits', 'debits', 'transactions'].includes(sort.column)
+      ? totals(wallet)[sort.column as keyof ReturnType<typeof totals>]
+      : wallet[sort.column as keyof WalletEntry];
+    return String(value(a) ?? '').localeCompare(String(value(b) ?? ''), undefined, { numeric: true }) * (sort.direction === 'asc' ? 1 : -1);
+  });
+  const handleSort = (column: string) => setSort(prev => ({
+    column,
+    direction: prev.column === column && prev.direction === 'asc' ? 'desc' : 'asc',
+  }));
 
   const totalBalance  = wallets.reduce((s, w) => s + w.balance, 0);
   const totalCredits  = wallets.flatMap(w => w.transactions).filter(t => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
@@ -61,8 +78,8 @@ export default function WalletSection() {
       </div>
 
       {/* Search */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-2 bg-white border border-green-100 rounded-xl px-3 py-2.5 flex-1 max-w-sm shadow-sm">
+      <div className="admin-toolbar">
+        <div className="admin-search flex-1 max-w-sm">
           <Search size={14} className="text-gray-400 flex-shrink-0" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
@@ -79,14 +96,18 @@ export default function WalletSection() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="admin-table-panel">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-gradient-to-r from-violet-50 to-purple-50 border-b-2 border-violet-100">
-                {['#', 'User', 'Balance', 'Credits', 'Debits', 'Transactions', 'Details'].map(h => (
-                  <th key={h} className="px-4 py-3.5 text-left text-[10px] font-extrabold uppercase tracking-wider text-gray-500 whitespace-nowrap">{h}</th>
-                ))}
+              <tr>
+                <th className="admin-table-static-heading text-center">#</th>
+                <SortableHeader label="User" column="userName" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Balance" column="balance" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Credits" column="credits" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Debits" column="debits" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Transactions" column="transactions" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <th className="admin-table-static-heading text-left">Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -138,9 +159,9 @@ export default function WalletSection() {
                     <td className="px-4 py-3.5">
                       <button
                         onClick={() => setDetail(w)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 transition-colors opacity-70 group-hover:opacity-100"
+                        className="admin-button-secondary !min-h-8 !px-3 !text-xs opacity-80 group-hover:opacity-100"
                       >
-                        View →
+                        View <ArrowUpRight size={13} />
                       </button>
                     </td>
                   </tr>
@@ -155,7 +176,7 @@ export default function WalletSection() {
       {detail && (
         <Modal open={!!detail} onClose={() => setDetail(null)} title="Wallet Details" size="lg"
           footer={
-            <button onClick={() => setDetail(null)} className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm font-semibold transition-colors">
+            <button onClick={() => setDetail(null)} className="admin-button-secondary">
               Close
             </button>
           }
@@ -228,7 +249,7 @@ function SummaryCard({ icon, bg, label, value, sub, accent = 'text-gray-800' }: 
   accent?: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:-translate-y-1 transition-transform duration-200">
+    <div className="admin-card p-5">
       <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center mb-3`}>
         {icon}
       </div>
