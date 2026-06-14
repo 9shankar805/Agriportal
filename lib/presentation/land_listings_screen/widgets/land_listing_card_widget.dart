@@ -39,7 +39,7 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
   @override
   void initState() {
     super.initState();
-    _checkInitialSaveStatus();
+    _checkInitialSaveState();
     LanguageController.instance.addListener(_onLanguageChanged);
   }
 

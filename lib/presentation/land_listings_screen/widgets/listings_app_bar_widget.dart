@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/app_export.dart';
 import '../../../core/app_localizations.dart';
+import '../../../core/user_session.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_icon_widget.dart';
 import '../../../widgets/custom_image_widget.dart';
-import '../../../core/user_session.dart';
 
 class ListingsAppBarWidget extends StatelessWidget {
   const ListingsAppBarWidget({super.key});
@@ -16,18 +16,14 @@ class ListingsAppBarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final screenWidth = MediaQuery.of(context).size.width;
     final t = AppLocalizations.of(context);
-    // On narrow screens hide the location chip text, keep icon only
-    final isNarrow = screenWidth < 360;
 
     return Container(
       color: theme.colorScheme.surface,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── Logo ──────────────────────────────────────────────────────────
+          // ── Brand ────────────────────────────────────────────────────────
           Container(
             width: 34,
             height: 34,
@@ -35,7 +31,7 @@ class ListingsAppBarWidget extends StatelessWidget {
               color: AppTheme.primary,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Center(
+            child: const Center(
               child: CustomIconWidget(
                 iconName: 'eco',
                 color: Colors.white,
@@ -43,7 +39,7 @@ class ListingsAppBarWidget extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           RichText(
             text: TextSpan(
               children: [
@@ -70,50 +66,39 @@ class ListingsAppBarWidget extends StatelessWidget {
           const Spacer(),
 
           // ── Location chip ─────────────────────────────────────────────────
-          if (!isNarrow)
-            Container(
-              constraints: const BoxConstraints(maxWidth: 100),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CustomIconWidget(
-                    iconName: 'location_on',
-                    color: AppTheme.primary,
-                    size: 13,
-                  ),
-                  const SizedBox(width: 3),
-                  Flexible(
-                    child: Text(
-                      t.nepal,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  CustomIconWidget(
-                    iconName: 'keyboard_arrow_down',
-                    color: theme.colorScheme.outline,
-                    size: 13,
-                  ),
-                ],
-              ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryContainer,
+              borderRadius: BorderRadius.circular(20),
             ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CustomIconWidget(
+                  iconName: 'location_on',
+                  color: AppTheme.primary,
+                  size: 12,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  t.nepal,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-          if (!isNarrow) const SizedBox(width: 6),
+          const SizedBox(width: 8),
 
-          // ── Saved lands ───────────────────────────────────────────────────
-          _AppBarIconButton(
+          // ── Saved ─────────────────────────────────────────────────────────
+          _IconBtn(
             icon: 'favorite_border',
             onTap: () => context.push(AppRoutes.savedLands),
-            theme: theme,
           ),
           const SizedBox(width: 6),
 
@@ -121,19 +106,18 @@ class ListingsAppBarWidget extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              _AppBarIconButton(
+              _IconBtn(
                 icon: 'notifications_outlined',
                 onTap: () => context.push(AppRoutes.notifications),
-                theme: theme,
               ),
               Positioned(
-                top: 4,
-                right: 4,
+                top: 3,
+                right: 3,
                 child: Container(
                   width: 7,
                   height: 7,
                   decoration: const BoxDecoration(
-                    color: Color(0xFFC62828),
+                    color: AppTheme.error,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -142,7 +126,7 @@ class ListingsAppBarWidget extends StatelessWidget {
           ),
           const SizedBox(width: 6),
 
-          // ── Avatar → Profile ──────────────────────────────────────────────
+          // ── Avatar ─────────────────────────────────────────────────────────
           GestureDetector(
             onTap: () => context.go(AppRoutes.profile),
             child: _UserAvatar(),
@@ -153,23 +137,14 @@ class ListingsAppBarWidget extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Small icon button
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _AppBarIconButton extends StatelessWidget {
+class _IconBtn extends StatelessWidget {
   final String icon;
   final VoidCallback onTap;
-  final ThemeData theme;
-
-  const _AppBarIconButton({
-    required this.icon,
-    required this.onTap,
-    required this.theme,
-  });
+  const _IconBtn({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -183,17 +158,13 @@ class _AppBarIconButton extends StatelessWidget {
           child: CustomIconWidget(
             iconName: icon,
             color: theme.colorScheme.onSurface,
-            size: 19,
+            size: 18,
           ),
         ),
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// User avatar — shows Firebase photo or initials
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _UserAvatar extends StatelessWidget {
   @override
