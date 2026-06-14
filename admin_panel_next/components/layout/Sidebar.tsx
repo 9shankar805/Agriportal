@@ -47,22 +47,22 @@ export default function Sidebar({ active, onNav, onLogout, adminName }: SidebarP
       <li>
         <button
           onClick={() => onNav(item.id)}
-          className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all duration-200 group
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200 group
             ${isActive
-              ? 'bg-white/20 text-white shadow-lg border border-white/30'
-              : 'text-white/70 hover:bg-white/10 hover:text-white hover:translate-x-1'
+              ? 'bg-green-50 text-green-800 border border-green-200'
+              : 'text-gray-600 border border-transparent hover:bg-gray-100 hover:text-gray-900'
             }`}
           aria-current={isActive ? 'page' : undefined}
         >
-          <item.icon size={20} className="flex-shrink-0" />
+          <item.icon size={18} className="flex-shrink-0" />
           <span className="flex-1 text-left">{item.label}</span>
           {count > 0 && (
-            <span className={`text-[11px] font-black px-2.5 py-1 rounded-full flex-shrink-0 shadow-sm
-              ${item.warn ? 'bg-amber-400 text-amber-900' : 'bg-green-400 text-green-900'}`}>
+            <span className={`text-[10px] font-bold min-w-5 px-1.5 py-0.5 rounded-full flex-shrink-0 text-center
+              ${item.warn ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
               {count}
             </span>
           )}
-          {isActive && <ChevronRight size={16} className="flex-shrink-0" />}
+          {isActive && <ChevronRight size={14} className="flex-shrink-0" />}
         </button>
       </li>
     );
@@ -70,65 +70,64 @@ export default function Sidebar({ active, onNav, onLogout, adminName }: SidebarP
 
   return (
     <nav
-      className="w-72 min-h-screen flex flex-col shadow-xl"
-      style={{ background: 'linear-gradient(180deg, #14532d 0%, #166534 40%, #15803d 100%)' }}
+      className="w-[272px] h-screen max-h-screen min-h-0 flex flex-col overflow-hidden bg-white border-r border-gray-200"
       aria-label="Admin navigation"
     >
       {/* Brand */}
-      <div className="flex items-center gap-4 px-6 py-7 border-b border-white/10">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+      <div className="flex items-center gap-3 px-5 h-20 border-b border-gray-200">
+        <div className="w-10 h-10 rounded-lg bg-green-700 flex items-center justify-center flex-shrink-0">
           <Leaf size={28} className="text-white" />
         </div>
         <div>
-          <div className="font-black text-white text-xl leading-none">AgriPortal</div>
-          <div className="text-white/60 text-xs mt-1 font-semibold">Admin Console</div>
+          <div className="font-bold text-gray-950 text-base leading-none">AgriPortal</div>
+          <div className="text-gray-500 text-[11px] mt-1 font-medium">Administration</div>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 py-6 overflow-y-auto px-4 space-y-5">
+      <div className="flex-1 min-h-0 py-5 overflow-y-auto overscroll-contain px-3 space-y-5">
         <div>
-          <div className="px-4 py-2 text-[11px] font-black tracking-widest text-white/40 uppercase mb-2">Main</div>
-          <ul className="space-y-2">
+          <div className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">Main</div>
+          <ul className="space-y-1">
             {MAIN_NAV.map(item => <NavItem key={item.id} item={item} />)}
           </ul>
         </div>
 
         <div>
-          <div className="px-4 py-2 text-[11px] font-black tracking-widest text-white/40 uppercase mb-2">Content</div>
-          <ul className="space-y-2">
+          <div className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">Content</div>
+          <ul className="space-y-1">
             {CONTENT_NAV.map(item => <NavItem key={item.id} item={item} />)}
           </ul>
         </div>
 
         <div>
-          <div className="px-4 py-2 text-[11px] font-black tracking-widest text-white/40 uppercase mb-2">Reports & Settings</div>
-          <ul className="space-y-2">
+          <div className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">Reports & Settings</div>
+          <ul className="space-y-1">
             {REPORT_NAV.map(item => <NavItem key={item.id} item={item} />)}
           </ul>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="border-t border-white/10 px-5 py-6 flex items-center gap-4 mx-4 my-4 rounded-3xl bg-white/10">
+      <div className="border-t border-gray-200 px-4 py-4 flex items-center gap-3">
         <Avatar
           name={adminName}
           photoUrl={typeof window !== 'undefined' ? undefined : undefined}
-          size={52}
-          radius="16px"
-          className="border-2 border-white/30 flex-shrink-0 shadow-md"
+          size={40}
+          radius="8px"
+          className="flex-shrink-0"
         />
         <div className="flex-1 min-w-0">
-          <div className="text-white font-extrabold text-sm truncate">{adminName}</div>
-          <div className="text-white/60 text-xs font-medium">Super Admin</div>
+          <div className="text-gray-900 font-semibold text-sm truncate">{adminName}</div>
+          <div className="text-gray-500 text-[11px] font-medium">Super Admin</div>
         </div>
         <button
           onClick={onLogout}
-          className="p-3 rounded-2xl text-white/70 hover:bg-white/20 hover:text-white transition-all"
+          className="p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
           title="Logout"
           aria-label="Logout"
         >
-          <LogOut size={20} />
+          <LogOut size={17} />
         </button>
       </div>
     </nav>

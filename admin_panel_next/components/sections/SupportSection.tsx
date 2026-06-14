@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Search, CheckCircle, RotateCcw, Trash2, Mail } from 'lucide-react';
+import { Search, CheckCircle2, RotateCcw, Trash2, Mail, UserRound, Info } from 'lucide-react';
 import { useAdmin } from '@/context/AdminContext';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
@@ -55,21 +55,17 @@ export default function SupportSection() {
   return (
     <div className="fade-up space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-2 bg-white border border-green-100 rounded-lg px-3 py-2 flex-1 max-w-xs shadow-sm">
+      <div className="admin-toolbar">
+        <div className="admin-search flex-1 max-w-sm">
           <Search size={14} className="text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search messages…" className="border-none outline-none bg-transparent text-sm flex-1" />
         </div>
-        <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1">
+        <div className="flex gap-1 bg-gray-100 border border-gray-200 rounded-lg p-1">
           {TABS.map(t => (
             <button key={t.value}
               onClick={() => setTab(t.value)}
-              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors
-                ${tab === t.value
-                  ? t.value === 'open' ? 'bg-amber-400 text-amber-900'
-                    : t.value === 'resolved' ? 'bg-green-500 text-white'
-                    : 'bg-gray-400 text-white'
-                  : 'text-gray-500 hover:bg-gray-100'}`}>
+              className={`border border-transparent px-3 py-2 rounded-md text-xs font-semibold transition-colors
+                ${tab === t.value ? 'bg-white text-gray-950 shadow-sm border-gray-200' : 'text-gray-500 hover:text-gray-900'}`}>
               {t.label}
             </button>
           ))}
@@ -79,7 +75,7 @@ export default function SupportSection() {
       {/* Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4" style={{ minHeight: 480 }}>
         {/* List */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col">
+        <div className="admin-card overflow-hidden flex flex-col">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between font-bold text-sm">
             <span><Mail size={14} className="inline mr-2 text-green-600" />Messages</span>
             <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 font-semibold">{list.length}</span>
@@ -116,7 +112,7 @@ export default function SupportSection() {
         </div>
 
         {/* Detail */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col">
+        <div className="admin-card overflow-hidden flex flex-col">
           {!active ? (
             <div className="flex-1 flex items-center justify-center text-gray-400">
               <div className="text-center p-8">
@@ -146,15 +142,15 @@ export default function SupportSection() {
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {active.status === 'open' ? (
-                    <button onClick={() => setStatus(active.id, 'resolved')} className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 text-xs font-bold transition-colors">
-                      <CheckCircle size={13} /> Mark Resolved
+                    <button onClick={() => setStatus(active.id, 'resolved')} className="admin-button-primary !min-h-8 !px-3 !text-xs">
+                      <CheckCircle2 size={13} /> Mark Resolved
                     </button>
                   ) : (
-                    <button onClick={() => setStatus(active.id, 'open')} className="flex items-center gap-1.5 border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors">
+                    <button onClick={() => setStatus(active.id, 'open')} className="admin-button-secondary !min-h-8 !px-3 !text-xs">
                       <RotateCcw size={13} /> Reopen
                     </button>
                   )}
-                  <button onClick={() => setConfirm(active)} className="flex items-center gap-1.5 border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors">
+                  <button onClick={() => setConfirm(active)} className="admin-icon-button hover:!border-red-200 hover:!bg-red-50 hover:!text-red-600" title="Delete message">
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -177,17 +173,17 @@ export default function SupportSection() {
                 </div>
 
                 <div className="font-bold text-sm mb-2">Message</div>
-                <div className="bg-green-50/60 border border-green-100 rounded-xl px-4 py-3.5 text-sm leading-relaxed whitespace-pre-wrap text-gray-700 mb-4">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3.5 text-sm leading-relaxed whitespace-pre-wrap text-gray-700 mb-4">
                   {active.message}
                 </div>
 
                 {active.uid ? (
-                  <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800">
-                    👤 Sent by a registered user — UID: <code className="font-mono text-xs">{active.uid}</code>
+                  <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                    <UserRound size={15} className="flex-shrink-0 text-gray-400" /> Sent by a registered user. UID: <code className="font-mono text-xs">{active.uid}</code>
                   </div>
                 ) : (
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-500">
-                    ℹ Sent as a guest (not signed in).
+                  <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+                    <Info size={15} className="flex-shrink-0 text-gray-400" /> Sent as a guest (not signed in).
                   </div>
                 )}
               </div>
@@ -201,8 +197,8 @@ export default function SupportSection() {
         <Modal open={!!confirm} onClose={() => setConfirm(null)} title="Delete Message" size="sm"
           footer={
             <>
-              <button onClick={() => setConfirm(null)} className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-semibold">Cancel</button>
-              <button onClick={() => deleteMsg(confirm.id)} className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">Delete</button>
+              <button onClick={() => setConfirm(null)} className="admin-button-secondary">Cancel</button>
+              <button onClick={() => deleteMsg(confirm.id)} className="admin-button-danger !bg-red-600 !text-white hover:!bg-red-700">Delete</button>
             </>
           }
         >

@@ -1,11 +1,12 @@
 'use client';
 import { useState } from 'react';
-import { Search, UserPlus, Eye, UserCheck, UserX } from 'lucide-react';
+import { Search, UserPlus, Eye, UserCheck, UserX, ExternalLink } from 'lucide-react';
 import { useAdmin } from '@/context/AdminContext';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import type { AppUser } from '@/lib/types';
+import SortableHeader, { type SortDirection } from '@/components/ui/SortableHeader';
 
 export default function UsersSection() {
   const { users, apps, setUsers, showToast, firebaseReady } = useAdmin();
@@ -14,12 +15,23 @@ export default function UsersSection() {
   const [kycF,    setKycF]    = useState('');
   const [modal,   setModal]   = useState<AppUser | null>(null);
   const [confirm, setConfirm] = useState<{ user: AppUser; action: 'enable' | 'disable' } | null>(null);
+  const [sort, setSort] = useState<{ column: string; direction: SortDirection }>({ column: 'name', direction: 'asc' });
 
-  const list = users.filter(u =>
+  const filtered = users.filter(u =>
     (!search || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase())) &&
     (!roleF  || u.role === roleF) &&
     (!kycF   || u.kycStatus === kycF)
   );
+  const list = [...filtered].sort((a, b) => {
+    const value = (user: AppUser) => sort.column === 'status'
+      ? (user.isActive ? 'active' : 'disabled')
+      : user[sort.column as keyof AppUser] ?? '';
+    return String(value(a)).localeCompare(String(value(b)), undefined, { numeric: true }) * (sort.direction === 'asc' ? 1 : -1);
+  });
+  const handleSort = (column: string) => setSort(prev => ({
+    column,
+    direction: prev.column === column && prev.direction === 'asc' ? 'desc' : 'asc',
+  }));
 
   const toggleUser = async (u: AppUser) => {
     const next = !u.isActive;
@@ -53,8 +65,8 @@ export default function UsersSection() {
   return (
     <div className="space-y-6">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-3 bg-white border border-green-200 rounded-2xl px-5 py-3 flex-1 max-w-md shadow-sm">
+      <div className="admin-toolbar">
+        <div className="admin-search flex-1 max-w-md">
           <Search size={20} className="text-gray-400 flex-shrink-0" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
@@ -63,21 +75,21 @@ export default function UsersSection() {
           />
         </div>
         <select value={roleF} onChange={e => setRoleF(e.target.value)}
-          className="border border-green-200 rounded-2xl px-5 py-3 text-sm bg-white shadow-sm outline-none cursor-pointer font-medium"
+          className="admin-select"
         >
           <option value="">All Roles</option>
           <option value="farmer">Farmer</option>
           <option value="landOwner">Land Owner</option>
         </select>
         <select value={kycF} onChange={e => setKycF(e.target.value)}
-          className="border border-green-200 rounded-2xl px-5 py-3 text-sm bg-white shadow-sm outline-none cursor-pointer font-medium"
+          className="admin-select"
         >
           <option value="">All KYC</option>
           <option value="pending">Pending</option>
           <option value="verified">Verified</option>
           <option value="rejected">Rejected</option>
         </select>
-        <button className="ml-auto flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-2xl px-6 py-3 text-sm font-extrabold transition-all shadow-md hover:shadow-lg">
+        <button className="admin-button-primary ml-auto">
           <UserPlus size={18} /> Add User
         </button>
       </div>
@@ -98,14 +110,19 @@ export default function UsersSection() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-3xl shadow-md overflow-hidden border border-gray-100">
+      <div className="admin-table-panel">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200">
-                {['#', 'User', 'Role', 'Contact', 'KYC', 'Joined', 'Status', 'Actions'].map(h => (
-                  <th key={h} className="px-6 py-5 text-left text-xs font-extrabold uppercase tracking-wider text-gray-500 whitespace-nowrap">{h}</th>
-                ))}
+              <tr>
+                <th className="admin-table-static-heading text-center">#</th>
+                <SortableHeader label="User" column="name" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Role" column="role" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Contact" column="phone" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="KYC" column="kycStatus" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Joined" column="joined" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <SortableHeader label="Status" column="status" activeColumn={sort.column} direction={sort.direction} onSort={handleSort} />
+                <th className="admin-table-static-heading text-left">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -147,14 +164,14 @@ export default function UsersSection() {
                   <td className="px-6 py-5">
                     <div className="flex gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => setModal(u)}
-                        className="w-10 h-10 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 flex items-center justify-center transition-all shadow-sm"
+                        className="admin-icon-button hover:!border-blue-200 hover:!bg-blue-50 hover:!text-blue-700"
                         title="View Details"
                       >
                         <Eye size={16} />
                       </button>
                       {u.kycStatus === 'pending' && (
                         <button onClick={() => approveKyc(u)}
-                          className="w-10 h-10 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 flex items-center justify-center transition-all shadow-sm"
+                          className="admin-icon-button hover:!border-green-200 hover:!bg-green-50 hover:!text-green-700"
                           title="Approve KYC"
                         >
                           <UserCheck size={16} />
@@ -162,10 +179,10 @@ export default function UsersSection() {
                       )}
                       <button
                         onClick={() => setConfirm({ user: u, action: u.isActive ? 'disable' : 'enable' })}
-                        className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all shadow-sm
+                        className={`admin-icon-button
                           ${u.isActive
-                            ? 'border-red-200 bg-red-50 hover:bg-red-100 text-red-600'
-                            : 'border-green-200 bg-green-50 hover:bg-green-100 text-green-700'
+                            ? 'hover:!border-red-200 hover:!bg-red-50 hover:!text-red-600'
+                            : 'hover:!border-green-200 hover:!bg-green-50 hover:!text-green-700'
                           }`
                         }
                         title={u.isActive ? 'Disable User' : 'Enable User'}
@@ -194,9 +211,9 @@ export default function UsersSection() {
         <Modal open={!!modal} onClose={() => setModal(null)} title="User Details" size="md"
           footer={
             <>
-              <button onClick={() => setModal(null)} className="px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm font-extrabold transition-colors">Close</button>
+              <button onClick={() => setModal(null)} className="admin-button-secondary">Close</button>
               {modal.kycStatus === 'pending' && (
-                <button onClick={() => approveKyc(modal)} className="px-6 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-extrabold transition-all shadow-md">
+                <button onClick={() => approveKyc(modal)} className="admin-button-primary">
                   Approve KYC
                 </button>
               )}
@@ -204,8 +221,8 @@ export default function UsersSection() {
           }
         >
           {/* Profile header */}
-          <div className="flex items-center gap-5 mb-6 p-5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200">
-            <Avatar name={modal.name} photoUrl={modal.photoUrl} size={72} radius="20px" />
+          <div className="flex items-center gap-5 mb-6 p-5 bg-gray-50 rounded-lg border border-gray-200">
+            <Avatar name={modal.name} photoUrl={modal.photoUrl} size={72} radius="12px" />
             <div className="flex-1 min-w-0">
               <div className="font-extrabold text-xl text-gray-900 truncate">{modal.name}</div>
               <div className="text-base text-gray-500 truncate">{modal.email}</div>
@@ -224,7 +241,7 @@ export default function UsersSection() {
               { label: 'Joined', value: modal.joined },
               { label: 'Applications', value: apps.filter(a => a.applicant === modal.name).length },
             ].map(({ label, value }) => (
-              <div key={label} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+              <div key={label} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div className="text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-2">{label}</div>
                 <div className="font-extrabold text-gray-800 text-base">{value}</div>
               </div>
@@ -242,10 +259,10 @@ export default function UsersSection() {
                   { url: modal.kycDocuments.selfie, label: 'Selfie' },
                 ].filter(d => d.url).map(d => (
                   <a key={d.label} href={d.url} target="_blank" rel="noreferrer"
-                    className="group flex flex-col items-center gap-2 border-2 border-gray-200 hover:border-green-400 rounded-2xl overflow-hidden transition-all w-28 shadow-sm"
+                    className="group flex flex-col items-center gap-2 border border-gray-200 hover:border-green-400 rounded-lg overflow-hidden transition-all w-28"
                   >
                     <img src={d.url} alt={d.label} className="w-28 h-20 object-cover" />
-                    <span className="text-xs font-extrabold text-gray-500 pb-3 group-hover:text-green-700 transition-colors">{d.label} ↗</span>
+                    <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 pb-3 group-hover:text-green-700 transition-colors">{d.label} <ExternalLink size={12} /></span>
                   </a>
                 ))}
               </div>
@@ -260,9 +277,9 @@ export default function UsersSection() {
           title={`${confirm.action === 'enable' ? 'Enable' : 'Disable'} User`} size="sm"
           footer={
             <>
-              <button onClick={() => setConfirm(null)} className="px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm font-extrabold transition-colors">Cancel</button>
+              <button onClick={() => setConfirm(null)} className="admin-button-secondary">Cancel</button>
               <button onClick={() => toggleUser(confirm.user)}
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-sm font-extrabold transition-all shadow-md"
+                className="admin-button-danger !bg-red-600 !text-white hover:!bg-red-700"
               >
                 Confirm
               </button>

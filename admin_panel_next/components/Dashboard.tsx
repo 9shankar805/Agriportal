@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Sidebar from './layout/Sidebar';
 import Topbar from './layout/Topbar';
 import Overview from './sections/Overview';
@@ -25,6 +25,7 @@ export default function Dashboard({ adminName, onLogout }: DashboardProps) {
   const { loadAllFirebase, firebaseReady, authUser } = useAdmin();
   const [section,     setSection]     = useState<SectionId>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
 
   // Load Firebase data once auth user is confirmed
   useEffect(() => {
@@ -36,7 +37,7 @@ export default function Dashboard({ adminName, onLogout }: DashboardProps) {
   const nav = (id: string) => {
     setSection(id as SectionId);
     setSidebarOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleLogout = () => {
@@ -58,7 +59,7 @@ export default function Dashboard({ adminName, onLogout }: DashboardProps) {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="admin-shell flex h-screen max-h-screen overflow-hidden">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -68,19 +69,19 @@ export default function Dashboard({ adminName, onLogout }: DashboardProps) {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed top-0 left-0 h-full z-[200] transition-transform duration-300 lg:translate-x-0 lg:static lg:block
+      <div className={`fixed inset-y-0 left-0 h-screen max-h-screen z-[200] transition-transform duration-300 lg:translate-x-0 lg:static lg:block lg:shrink-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <Sidebar active={section} onNav={nav} onLogout={handleLogout} adminName={adminName} />
       </div>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-h-screen lg:ml-0" style={{ minWidth: 0 }}>
+      <div className="flex-1 flex flex-col h-screen max-h-screen min-h-0 lg:ml-0" style={{ minWidth: 0 }}>
         <Topbar
           section={section}
           onMenuClick={() => setSidebarOpen(true)}
           onRefresh={() => loadAllFirebase()}
         />
-        <main className="flex-1 p-5 md:p-6 overflow-y-auto">
+        <main ref={mainRef} className="dashboard-content flex-1 min-h-0 px-4 py-5 sm:px-6 lg:px-8 lg:py-7 overflow-y-auto overscroll-contain">
           {sectionMap[section]}
         </main>
       </div>
