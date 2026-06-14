@@ -99,16 +99,26 @@ class _SearchFilterWidgetState extends State<SearchFilterWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final t = AppLocalizations.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           // ── Search field ─────────────────────────────────────────────────
           Expanded(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: 48,
+            child: Container(
+              height: 50,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(14),
@@ -155,9 +165,7 @@ class _SearchFilterWidgetState extends State<SearchFilterWidget> {
                     padding: const EdgeInsets.only(left: 14, right: 8),
                     child: CustomIconWidget(
                       iconName: 'search',
-                      color: _isFocused
-                          ? AppTheme.primary
-                          : theme.colorScheme.outline,
+                      color: theme.colorScheme.primary,
                       size: 19,
                     ),
                   ),
@@ -196,43 +204,26 @@ class _SearchFilterWidgetState extends State<SearchFilterWidget> {
           // ── Filter button ────────────────────────────────────────────────
           GestureDetector(
             onTap: _showFilterSheet,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: _hasActiveFilters
-                        ? AppTheme.primary
-                        : theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: _hasActiveFilters
-                          ? AppTheme.primary
-                          : theme.colorScheme.outlineVariant,
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _hasActiveFilters
-                            ? AppTheme.primary.withAlpha(50)
-                            : Colors.black.withAlpha(10),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: AppTheme.primary,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withOpacity(0.22),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  child: Center(
-                    child: CustomIconWidget(
-                      iconName: 'tune',
-                      color: _hasActiveFilters
-                          ? Colors.white
-                          : theme.colorScheme.onSurface,
-                      size: 20,
-                    ),
-                  ),
+                ],
+              ),
+              child: const Center(
+                child: CustomIconWidget(
+                  iconName: 'tune',
+                  color: Colors.white,
+                  size: 20,
                 ),
                 if (_hasActiveFilters)
                   Positioned(
@@ -321,6 +312,8 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
 
   String _getTranslatedName(String name, AppLocalizations t) {
     if (name == 'All') return t.all;
+
+    // Try to find in province list first
     if (widget.nepalLocationData != null) {
       for (final province in widget.nepalLocationData!.provinceList) {
         if (province.nameEn == name) {
@@ -328,15 +321,31 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
               ? province.nameNp!
               : province.nameEn;
         }
+
+        // Check districts in this province
         for (final district in province.districtList) {
           if (district.nameEn == name) {
-            return (LanguageController.instance.isNepali && district.nameNp != null)
-                ? district.nameNp!
-                : district.nameEn;
+            if (LanguageController.instance.isNepali &&
+                district.nameNp != null) {
+              return district.nameNp!;
+            }
+            return district.nameEn;
+          }
+
+          // Check municipalities in this district
+          for (final municipality in district.municipalityList) {
+            if (municipality.nameEn == name) {
+              if (LanguageController.instance.isNepali &&
+                  municipality.nameNp != null) {
+                return municipality.nameNp!;
+              }
+              return municipality.nameEn;
+            }
           }
         }
       }
     }
+
     return name;
   }
 
@@ -364,18 +373,29 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
     final maxH = MediaQuery.of(context).size.height * 0.88;
 
     return Container(
-      constraints: BoxConstraints(maxHeight: maxH),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── Handle + header ──────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-            child: Column(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.outline.withAlpha(77),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Center(
                   child: Container(
@@ -387,6 +407,142 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                     ),
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            // Province filter
+            Text(
+              t.province,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: widget.provinces.map((p) {
+                final isSelected = p == _selectedProvince;
+                return InkWell(
+                  onTap: () => setState(() => _selectedProvince = p),
+                  borderRadius: BorderRadius.circular(8),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppTheme.primaryContainer
+                          : theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppTheme.primary
+                            : Colors.transparent,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Text(
+                      _getTranslatedName(p, t),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: isSelected
+                            ? AppTheme.primary
+                            : theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 18),
+            // District filter
+            Text(
+              t.district,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: widget.districts.map((d) {
+                final isSelected = d == _selectedDistrict;
+                return InkWell(
+                  onTap: () => setState(() => _selectedDistrict = d),
+                  borderRadius: BorderRadius.circular(8),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppTheme.primaryContainer
+                          : theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppTheme.primary
+                            : Colors.transparent,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Text(
+                      _getTranslatedName(d, t),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: isSelected
+                            ? AppTheme.primary
+                            : theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 18),
+            // Price range filter
+            Text(
+              t.priceRangeMonthly,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Rs. ${_priceRange.start.toInt()}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -560,6 +716,17 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
                   const SizedBox(height: 8),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
@@ -593,6 +760,36 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
               20,
               MediaQuery.of(context).padding.bottom + 16,
             ),
+            const SizedBox(height: 18),
+            // Area range filter
+            Text(
+              t.areaRangeRopani,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${_areaRange.start.toInt()} ${t.ropani}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               border: Border(
@@ -614,6 +811,24 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                   ),
                   elevation: 0,
                 ),
+                const SizedBox(width: 8),
+                Text(
+                  '-',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

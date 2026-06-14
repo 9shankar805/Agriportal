@@ -55,165 +55,180 @@ class _FeaturedBannerWidgetState extends State<FeaturedBannerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: SizedBox(
-        height: 200,
-        child: Stack(
-          children: [
-            PageView.builder(
-              controller: _pageController,
-              itemCount: _banners.length,
-              onPageChanged: (i) => setState(() => _currentPage = i),
-              itemBuilder: (context, index) {
-                final banner = _banners[index];
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    CustomImageWidget(
-                      imageUrl: banner['imageUrl']!,
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
-                      semanticLabel: banner['semanticLabel']!,
-                    ),
-                    // Dark gradient overlay
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topRight,
-                          end: Alignment.bottomLeft,
-                          colors: [Colors.transparent, Color(0xCC000000)],
-                          stops: [0.3, 1.0],
-                        ),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: SizedBox(
+          height: 214,
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: _pageController,
+                itemCount: _banners.length,
+                onPageChanged: (i) => setState(() => _currentPage = i),
+                itemBuilder: (context, index) {
+                  final banner = _banners[index];
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CustomImageWidget(
+                        imageUrl: banner['imageUrl']!,
+                        width: double.infinity,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        semanticLabel: banner['semanticLabel']!,
                       ),
-                    ),
-                    // Content overlay
-                    Positioned(
-                      left: 16,
-                      bottom: 16,
-                      right: 90,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            banner['headline']!,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              height: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            banner['subtitle']!,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.white.withAlpha(217),
-                              height: 1.4,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    // CTA button
-                    Positioned(
-                      right: 16,
-                      bottom: 16,
-                      child: ElevatedButton(
-                        onPressed: widget.onExploreTap,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.secondary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          'Explore',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Demo Video pill
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
+                      // Dark gradient overlay
+                      Container(
                         decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(140),
-                          borderRadius: BorderRadius.circular(999),
+                          gradient: LinearGradient(
+                            begin: Alignment.topRight,
+                            end: Alignment.bottomLeft,
+                            colors: [
+                              Colors.black.withOpacity(0.04),
+                              Colors.black.withOpacity(0.72),
+                            ],
+                            stops: const [0.25, 1.0],
+                          ),
                         ),
-                        child: Row(
+                      ),
+                      // Content overlay
+                      Positioned(
+                        left: 16,
+                        bottom: 16,
+                        right: 90,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            CustomIconWidget(
-                              iconName: 'play_circle_outline',
-                              color: Colors.white,
-                              size: 14,
-                            ),
-                            const SizedBox(width: 4),
                             Text(
-                              'Virtual Tour',
+                              banner['headline']!,
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
                                 color: Colors.white,
+                                height: 1.2,
                               ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              banner['subtitle']!,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.white.withAlpha(217),
+                                height: 1.4,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            // Dot indicators
-            Positioned(
-              bottom: 12,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(_banners.length, (i) {
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: _currentPage == i ? 20 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: _currentPage == i
-                          ? Colors.white
-                          : Colors.white.withAlpha(102),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
+                      // CTA button
+                      Positioned(
+                        right: 16,
+                        bottom: 16,
+                        child: ElevatedButton(
+                          onPressed: widget.onExploreTap,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.secondary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'Explore',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Demo Video pill
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withAlpha(140),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CustomIconWidget(
+                                iconName: 'play_circle_outline',
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Virtual Tour',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   );
-                }),
+                },
               ),
-            ),
-          ],
+              // Dot indicators
+              Positioned(
+                bottom: 12,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_banners.length, (i) {
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: _currentPage == i ? 20 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: _currentPage == i
+                            ? Colors.white
+                            : Colors.white.withAlpha(102),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

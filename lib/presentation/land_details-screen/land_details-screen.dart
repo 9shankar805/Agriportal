@@ -35,10 +35,10 @@ class LandDetailScreen extends StatefulWidget {
 
 class _LandDetailScreenState extends State<LandDetailScreen> {
   bool _isLoading = true;
-  bool _isSaved   = false;
+  bool _isSaved = false;
   LandModel? _land;
   bool _applicationSubmitted = false;
-  String _ownerId   = '';
+  String _ownerId = '';
   String _ownerName = '';
   NepalLocationResponse? _nepalLocationData;
 
@@ -62,7 +62,9 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
 
   Future<void> _loadNepalLocationData() async {
     try {
-      final String response = await rootBundle.loadString('assets/nepal_location.json');
+      final String response = await rootBundle.loadString(
+        'assets/nepal_location.json',
+      );
       final data = json.decode(response);
       if (mounted) {
         setState(() {
@@ -76,7 +78,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
 
   String _getTranslatedName(String nameEn) {
     if (_nepalLocationData == null) return nameEn;
-    
+
     for (final province in _nepalLocationData!.provinceList) {
       if (province.nameEn == nameEn) {
         if (LanguageController.instance.isNepali && province.nameNp != null) {
@@ -84,7 +86,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
         }
         return province.nameEn;
       }
-      
+
       for (final district in province.districtList) {
         if (district.nameEn == nameEn) {
           if (LanguageController.instance.isNepali && district.nameNp != null) {
@@ -92,10 +94,11 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
           }
           return district.nameEn;
         }
-        
+
         for (final municipality in district.municipalityList) {
           if (municipality.nameEn == nameEn) {
-            if (LanguageController.instance.isNepali && municipality.nameNp != null) {
+            if (LanguageController.instance.isNepali &&
+                municipality.nameNp != null) {
               return municipality.nameNp!;
             }
             return municipality.nameEn;
@@ -103,7 +106,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
         }
       }
     }
-    
+
     return nameEn;
   }
 
@@ -117,8 +120,8 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
         final land = LandModel.fromFirestore(doc);
         final data = doc.data()!;
         setState(() {
-          _land      = land;
-          _ownerId   = data['ownerId']   as String? ?? '';
+          _land = land;
+          _ownerId = data['ownerId'] as String? ?? '';
           _ownerName = data['ownerName'] as String? ?? '';
           _isLoading = false;
         });
@@ -134,7 +137,9 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
 
   Future<void> _loadSavedStatus() async {
     try {
-      final isSaved = await FirestoreService.instance.isLandSaved(widget.landId);
+      final isSaved = await FirestoreService.instance.isLandSaved(
+        widget.landId,
+      );
       if (mounted) setState(() => _isSaved = isSaved);
     } catch (_) {
       // Not critical — user may not be signed in
@@ -145,8 +150,10 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
   Future<void> _onApplyNow() async {
     final uid = UserSession.instance.uid;
     if (uid.isEmpty) {
-      _showKycDialog('Sign In Required',
-          'Please sign in to apply for land listings.');
+      _showKycDialog(
+        'Sign In Required',
+        'Please sign in to apply for land listings.',
+      );
       return;
     }
 
@@ -170,24 +177,31 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
     _showApplicationSheet();
   }
 
-  void _showKycDialog(String title, String message,
-      {bool showKycButton = false}) {
+  void _showKycDialog(
+    String title,
+    String message, {
+    bool showKycButton = false,
+  }) {
     final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(title,
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
-        content: Text(message,
-            style:
-                GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.5)),
+        title: Text(
+          title,
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          message,
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.5),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(t.ok,
-                style: GoogleFonts.plusJakartaSans(
-                    color: AppTheme.primary)),
+            child: Text(
+              t.ok,
+              style: GoogleFonts.plusJakartaSans(color: AppTheme.primary),
+            ),
           ),
           if (showKycButton)
             ElevatedButton(
@@ -198,11 +212,16 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primary,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999)),
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
-              child: Text(t.verifyNow,
-                  style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white, fontWeight: FontWeight.w600)),
+              child: Text(
+                t.verifyNow,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
         ],
       ),
@@ -218,25 +237,28 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
     try {
       if (newSaved) {
         await FirestoreService.instance.saveLand(_land!.id, {
-          'title':             _land!.title,
-          'district':          _land!.district,
-          'province':          _land!.province,
-          'areaRopani':        _land!.areaRopani,
+          'title': _land!.title,
+          'district': _land!.district,
+          'province': _land!.province,
+          'areaRopani': _land!.areaRopani,
           'leasePriceMonthly': _land!.leasePriceMonthly,
-          'imageUrl':          _land!.imageUrl,
-          'category':          _land!.category,
-          'isVerified':        _land!.isVerified,
-          'ownerRating':       _land!.ownerRating,
+          'imageUrl': _land!.imageUrl,
+          'category': _land!.category,
+          'isVerified': _land!.isVerified,
+          'ownerRating': _land!.ownerRating,
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(t.savedToYourCollection,
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white)),
+              content: Text(
+                t.savedToYourCollection,
+                style: GoogleFonts.plusJakartaSans(color: Colors.white),
+              ),
               backgroundColor: AppTheme.success,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               margin: const EdgeInsets.all(16),
             ),
           );
@@ -256,9 +278,9 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _ApplicationSheet(
-        landId:    _land!.id,
+        landId: _land!.id,
         landTitle: _land!.title,
-        ownerId:   _ownerId,
+        ownerId: _ownerId,
         ownerName: _ownerName,
         onSubmit: () {
           Navigator.pop(ctx);
@@ -393,7 +415,10 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
                       // Owner contact
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                        child: OwnerContactWidget(land: _land!, ownerId: _ownerId),
+                        child: OwnerContactWidget(
+                          land: _land!,
+                          ownerId: _ownerId,
+                        ),
                       ),
                       // Virtual tour / photo gallery
                       Padding(
@@ -415,9 +440,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
                       // Similar lands
                       Padding(
                         padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-                        child: SimilarLandsWidget(
-                          currentLandId: _land!.id,
-                        ),
+                        child: SimilarLandsWidget(currentLandId: _land!.id),
                       ),
                       // Bottom padding for action bar
                       const SizedBox(height: 100),
@@ -553,9 +576,7 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
                   const SizedBox(height: 16),
                   CustomizeOptionsWidget(category: _land!.category),
                   const SizedBox(height: 16),
-                  SimilarLandsWidget(
-                    currentLandId: _land!.id,
-                  ),
+                  SimilarLandsWidget(currentLandId: _land!.id),
                   const SizedBox(height: 24),
                   DetailActionBarWidget(
                     applicationSubmitted: _applicationSubmitted,
@@ -648,9 +669,15 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
 
   Widget _buildDescription(ThemeData theme) {
     final t = AppLocalizations.of(context);
-    final soil = _land!.soilType.isNotEmpty ? _land!.soilType.toLowerCase() : 'fertile';
-    final water = _land!.waterSource.isNotEmpty ? _land!.waterSource.toLowerCase() : 'natural sources';
-    final cat = _land!.category.isNotEmpty ? _land!.category.toLowerCase() : 'agricultural';
+    final soil = _land!.soilType.isNotEmpty
+        ? _land!.soilType.toLowerCase()
+        : 'fertile';
+    final water = _land!.waterSource.isNotEmpty
+        ? _land!.waterSource.toLowerCase()
+        : 'natural sources';
+    final cat = _land!.category.isNotEmpty
+        ? _land!.category.toLowerCase()
+        : 'agricultural';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -682,11 +709,24 @@ class _LandDetailScreenState extends State<LandDetailScreen> {
           runSpacing: 8,
           children: [
             _FactChip(icon: 'straighten', label: '${_land!.areaRopani} Ropani'),
-            _FactChip(icon: 'terrain', label: _land!.soilType.isNotEmpty ? _land!.soilType : 'Mixed Soil'),
-            _FactChip(icon: 'water_drop', label: _land!.waterSource.isNotEmpty ? _land!.waterSource : 'Natural'),
+            _FactChip(
+              icon: 'terrain',
+              label: _land!.soilType.isNotEmpty
+                  ? _land!.soilType
+                  : 'Mixed Soil',
+            ),
+            _FactChip(
+              icon: 'water_drop',
+              label: _land!.waterSource.isNotEmpty
+                  ? _land!.waterSource
+                  : 'Natural',
+            ),
             if (_land!.hasIrrigation)
               _FactChip(icon: 'water', label: t.irrigated),
-            _FactChip(icon: 'category', label: _land!.category.isNotEmpty ? _land!.category : 'General'),
+            _FactChip(
+              icon: 'category',
+              label: _land!.category.isNotEmpty ? _land!.category : 'General',
+            ),
           ],
         ),
       ],
@@ -745,11 +785,7 @@ class _FactChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CustomIconWidget(
-            iconName: icon,
-            color: AppTheme.primary,
-            size: 13,
-          ),
+          CustomIconWidget(iconName: icon, color: AppTheme.primary, size: 13),
           const SizedBox(width: 5),
           Text(
             label,
@@ -807,11 +843,12 @@ class _ApplicationSheetState extends State<_ApplicationSheet> {
     setState(() => _isSubmitting = true);
     try {
       await FirestoreService.instance.applyForLand(
-        landId:    widget.landId,
+        landId: widget.landId,
         landTitle: widget.landTitle,
-        ownerId:   widget.ownerId,
+        ownerId: widget.ownerId,
         ownerName: widget.ownerName,
-        message:   '${_cropsController.text.trim()} — ${_proposalController.text.trim()}',
+        message:
+            '${_cropsController.text.trim()} — ${_proposalController.text.trim()}',
       );
       if (mounted) {
         setState(() => _isSubmitting = false);
