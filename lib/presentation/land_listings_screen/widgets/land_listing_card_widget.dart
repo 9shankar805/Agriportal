@@ -8,7 +8,6 @@ import '../../../models/nepal_location_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/custom_icon_widget.dart';
 import '../../../widgets/custom_image_widget.dart';
-import '../land_listings_screen.dart';
 
 class LandListingCardWidget extends StatefulWidget {
   final LandModel land;
@@ -39,7 +38,7 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
   @override
   void initState() {
     super.initState();
-    _checkInitialSaveStatus();
+    // _checkInitialSaveStatus();
     LanguageController.instance.addListener(_onLanguageChanged);
   }
 
@@ -60,7 +59,9 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
         images.add(url);
       }
     }
-    return images.isNotEmpty ? images : ['https://images.pexels.com/photos/974314/pexels-photo-974314.jpeg'];
+    return images.isNotEmpty
+        ? images
+        : ['https://images.pexels.com/photos/974314/pexels-photo-974314.jpeg'];
   }
 
   void _onLanguageChanged() {
@@ -69,7 +70,7 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
 
   String _getTranslatedLocationName(String nameEn) {
     if (widget.nepalLocationData == null) return nameEn;
-    
+
     for (final province in widget.nepalLocationData!.provinceList) {
       if (province.nameEn == nameEn) {
         if (LanguageController.instance.isNepali && province.nameNp != null) {
@@ -77,7 +78,7 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
         }
         return province.nameEn;
       }
-      
+
       for (final district in province.districtList) {
         if (district.nameEn == nameEn) {
           if (LanguageController.instance.isNepali && district.nameNp != null) {
@@ -85,10 +86,11 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
           }
           return district.nameEn;
         }
-        
+
         for (final municipality in district.municipalityList) {
           if (municipality.nameEn == nameEn) {
-            if (LanguageController.instance.isNepali && municipality.nameNp != null) {
+            if (LanguageController.instance.isNepali &&
+                municipality.nameNp != null) {
               return municipality.nameNp!;
             }
             return municipality.nameEn;
@@ -96,17 +98,8 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
         }
       }
     }
-    
-    return nameEn;
-  }
 
-  Future<void> _checkInitialSaveState() async {
-    try {
-      final isSaved = await FirestoreService.instance.isLandSaved(widget.land.id);
-      if (mounted) {
-        setState(() => _isSaved = isSaved);
-      }
-    } catch (_) {}
+    return nameEn;
   }
 
   Future<void> _toggleSave() async {
@@ -150,9 +143,9 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
       // Show error snackbar
       if (mounted) {
         final t = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t.failedToUpdateSavedLands)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(t.failedToUpdateSavedLands)));
       }
     } finally {
       if (mounted) {
@@ -174,16 +167,16 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
     final t = AppLocalizations.of(context);
     final images = _getAllImages();
     return Container(
-      width: widget.isHorizontal ? 195 : null,
+      width: widget.isHorizontal ? 200 : null,
       margin: widget.isHorizontal ? const EdgeInsets.only(right: 12) : null,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(18),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -198,20 +191,22 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
                   child: SizedBox(
                     width: double.infinity,
                     height: widget.isHorizontal ? 115 : 140,
                     child: PageView.builder(
                       controller: _pageController,
                       itemCount: images.length,
-                      onPageChanged: (index) => setState(() => _currentImageIndex = index),
+                      onPageChanged: (index) =>
+                          setState(() => _currentImageIndex = index),
                       itemBuilder: (context, index) {
                         return CustomImageWidget(
                           imageUrl: images[index],
                           width: double.infinity,
-                          height: widget.isHorizontal ? 115 : 140,
+                          height: widget.isHorizontal ? 122 : 140,
                           fit: BoxFit.cover,
                           semanticLabel: widget.land.semanticLabel,
                         );
@@ -241,13 +236,37 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                       }),
                     ),
                   ),
+                Positioned(
+                  bottom: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      widget.land.category,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
                 if (widget.land.isVerified)
                   Positioned(
                     top: 8,
                     left: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 3),
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.primary,
                         borderRadius: BorderRadius.circular(999),
@@ -301,8 +320,9 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                                 ),
                               )
                             : CustomIconWidget(
-                                iconName:
-                                    _isSaved ? 'favorite' : 'favorite_border',
+                                iconName: _isSaved
+                                    ? 'favorite'
+                                    : 'favorite_border',
                                 color: _isSaved
                                     ? const Color(0xFFE53935)
                                     : Colors.grey,
@@ -316,21 +336,21 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
             ),
             // ── Info ─────────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     widget.land.title,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
                       color: theme.colorScheme.onSurface,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       CustomIconWidget(
@@ -358,7 +378,9 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                       Expanded(
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 4),
+                            horizontal: 7,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.primaryContainer,
                             borderRadius: BorderRadius.circular(999),
@@ -551,7 +573,9 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                         Flexible(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: AppTheme.primaryContainer,
                               borderRadius: BorderRadius.circular(999),
@@ -571,7 +595,9 @@ class _LandListingCardWidgetState extends State<LandListingCardWidget> {
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 3),
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(6),
@@ -624,10 +650,7 @@ class _MetaChip extends StatelessWidget {
         const SizedBox(width: 3),
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 11,
-            color: color,
-          ),
+          style: GoogleFonts.plusJakartaSans(fontSize: 11, color: color),
         ),
       ],
     );

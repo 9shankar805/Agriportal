@@ -81,13 +81,25 @@ class _SearchFilterWidgetState extends State<SearchFilterWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final t = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           Expanded(
             child: Container(
-              height: 48,
+              height: 50,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(999),
@@ -107,8 +119,8 @@ class _SearchFilterWidgetState extends State<SearchFilterWidget> {
                     padding: const EdgeInsets.only(left: 14, right: 8),
                     child: CustomIconWidget(
                       iconName: 'search',
-                      color: theme.colorScheme.outline,
-                      size: 20,
+                      color: theme.colorScheme.primary,
+                      size: 19,
                     ),
                   ),
                   prefixIconConstraints: const BoxConstraints(
@@ -124,13 +136,20 @@ class _SearchFilterWidgetState extends State<SearchFilterWidget> {
           const SizedBox(width: 10),
           InkWell(
             onTap: _showFilterSheet,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             child: Container(
-              width: 48,
-              height: 48,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
                 color: AppTheme.primary,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withOpacity(0.22),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: const Center(
                 child: CustomIconWidget(
@@ -210,7 +229,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
 
   String _getTranslatedName(String name, AppLocalizations t) {
     if (name == 'All') return t.all;
-    
+
     // Try to find in province list first
     if (widget.nepalLocationData != null) {
       for (final province in widget.nepalLocationData!.provinceList) {
@@ -220,20 +239,22 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
           }
           return province.nameEn;
         }
-        
+
         // Check districts in this province
         for (final district in province.districtList) {
           if (district.nameEn == name) {
-            if (LanguageController.instance.isNepali && district.nameNp != null) {
+            if (LanguageController.instance.isNepali &&
+                district.nameNp != null) {
               return district.nameNp!;
             }
             return district.nameEn;
           }
-          
+
           // Check municipalities in this district
           for (final municipality in district.municipalityList) {
             if (municipality.nameEn == name) {
-              if (LanguageController.instance.isNepali && municipality.nameNp != null) {
+              if (LanguageController.instance.isNepali &&
+                  municipality.nameNp != null) {
                 return municipality.nameNp!;
               }
               return municipality.nameEn;
@@ -242,7 +263,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
         }
       }
     }
-    
+
     return name;
   }
 
@@ -251,11 +272,11 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
     final theme = Theme.of(context);
     final t = AppLocalizations.of(context);
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -271,7 +292,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -301,7 +322,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             // Province filter
             Text(
               t.province,
@@ -332,7 +353,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                           : theme.colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isSelected ? AppTheme.primary : Colors.transparent,
+                        color: isSelected
+                            ? AppTheme.primary
+                            : Colors.transparent,
                         width: 1.5,
                       ),
                     ),
@@ -340,8 +363,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                       _getTranslatedName(p, t),
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                         color: isSelected
                             ? AppTheme.primary
                             : theme.colorScheme.onSurface,
@@ -351,7 +375,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             // District filter
             Text(
               t.district,
@@ -382,7 +406,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                           : theme.colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isSelected ? AppTheme.primary : Colors.transparent,
+                        color: isSelected
+                            ? AppTheme.primary
+                            : Colors.transparent,
                         width: 1.5,
                       ),
                     ),
@@ -390,8 +416,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                       _getTranslatedName(d, t),
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                         color: isSelected
                             ? AppTheme.primary
                             : theme.colorScheme.onSurface,
@@ -401,7 +428,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             // Price range filter
             Text(
               t.priceRangeMonthly,
@@ -417,7 +444,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
@@ -443,7 +472,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
@@ -468,7 +499,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
               inactiveColor: theme.colorScheme.outlineVariant,
               onChanged: (values) => setState(() => _priceRange = values),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             // Area range filter
             Text(
               t.areaRangeRopani,
@@ -484,7 +515,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
@@ -510,7 +543,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
