@@ -53,7 +53,9 @@ class _SearchFilterWidgetState extends State<SearchFilterWidget> {
   @override
   void initState() {
     super.initState();
-    _focusNode.addListener(() => setState(() => _isFocused = _focusNode.hasFocus));
+    _focusNode.addListener(
+      () => setState(() => _isFocused = _focusNode.hasFocus),
+    );
   }
 
   @override
@@ -317,7 +319,8 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
     if (widget.nepalLocationData != null) {
       for (final province in widget.nepalLocationData!.provinceList) {
         if (province.nameEn == name) {
-          return (LanguageController.instance.isNepali && province.nameNp != null)
+          return (LanguageController.instance.isNepali &&
+                  province.nameNp != null)
               ? province.nameNp!
               : province.nameEn;
         }
@@ -589,7 +592,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                       style: TextButton.styleFrom(
                         foregroundColor: AppTheme.error,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -604,10 +609,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                Divider(
-                  height: 1,
-                  color: theme.colorScheme.outlineVariant,
-                ),
+                Divider(height: 1, color: theme.colorScheme.outlineVariant),
               ],
             ),
           ),
@@ -684,8 +686,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: AppTheme.primary,
-                      inactiveTrackColor:
-                          theme.colorScheme.outlineVariant,
+                      inactiveTrackColor: theme.colorScheme.outlineVariant,
                       thumbColor: AppTheme.primary,
                       overlayColor: AppTheme.primary.withAlpha(30),
                       trackHeight: 4,
@@ -731,8 +732,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: AppTheme.primary,
-                      inactiveTrackColor:
-                          theme.colorScheme.outlineVariant,
+                      inactiveTrackColor: theme.colorScheme.outlineVariant,
                       thumbColor: AppTheme.primary,
                       overlayColor: AppTheme.primary.withAlpha(30),
                       trackHeight: 4,
@@ -915,9 +915,7 @@ class _FilterChip extends StatelessWidget {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected
-                ? AppTheme.primary
-                : theme.colorScheme.onSurface,
+            color: isSelected ? AppTheme.primary : theme.colorScheme.onSurface,
           ),
         ),
       ),
